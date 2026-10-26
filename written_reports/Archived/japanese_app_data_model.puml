@@ -1,0 +1,184 @@
+@startuml japanese_app_data_model
+title Japanese Language App — Data Model
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classHeaderBackgroundColor #E1F5EE
+skinparam classBorderColor #0F6E56
+skinparam ArrowColor #444441
+skinparam linetype ortho
+
+' ──────────────────────────────────────────────
+' Source annotations (use <<stereotype>> for grouping)
+' ──────────────────────────────────────────────
+
+class Kanji <<KanjiDic2 + KanjiVG>> {
+  + character   : String  <<PK>>
+  + unicode_point : String
+  + onyomi      : String[]
+  + kunyomi     : String[]
+  + meanings    : String[]
+  + stroke_count : int
+  + grade       : int
+  + joyo        : boolean
+  + svg_path    : String
+  + lookalikes  : String[]
+}
+
+class Radical <<KRADFILE + Kanji Alive>> {
+  + id               : int  <<PK>>
+  + character        : String
+  + stroke_count     : int
+  + meaning          : String
+  + kun_reading      : String
+  + on_reading       : String
+  + position         : String
+  + svg_illustration : String
+}
+
+class PitchAccent <<Kanjium>> {
+  + id             : int  <<PK>>
+  + word_id        : int  <<FK → Vocabulary>>
+  + mora_position  : int
+  + pattern_type   : String
+  + audio_url      : String
+  + dialect        : String
+}
+
+class JLPTLevel <<Hanabira / Kanjium>> {
+  + level         : String  <<PK>>  ' N1-N5
+  + vocab_count   : int
+  + kanji_count   : int
+  + grammar_count : int
+  + passing_score : int
+}
+
+class FrequencyData <<Kanjium / Innocent Corpus>> {
+  + id              : int  <<PK>>
+  + word_id         : int  <<FK → Vocabulary>>
+  + rank            : int
+  + corpus          : String
+  + occurrences     : int
+  + normalized_freq : float
+}
+
+class Vocabulary <<JMdict / Kanjium>> {
+  + id              : int     <<PK>>
+  + word            : String
+  + reading         : String
+  + meanings        : String[]
+  + part_of_speech  : String
+  + common          : boolean
+  + register        : String  ' slang | formal | casual
+  + jlpt_level_id   : String  <<FK → JLPTLevel>>
+  + frequency_id    : int     <<FK → FrequencyData>>
+  + pitch_accent_id : int     <<FK → PitchAccent>>
+  + colloquial_tags : String[]
+  + audio_url       : String
+  + antonym_ids     : int[]
+  + synonym_ids     : int[]
+}
+
+class ExampleSentence <<Tatoeba / Tanaka Corpus>> {
+  + id        : int     <<PK>>
+  + japanese  : String
+  + english   : String
+  + vocab_ids : int[]   <<FK → Vocabulary>>
+  + audio_url : String
+  + difficulty: String
+  + source    : String
+}
+
+class NameEntry <<JMnedict>> {
+  + id            : int    <<PK>>
+  + name_kanji    : String
+  + name_kana     : String
+  + romanization  : String
+  + type          : String  ' person | place | org
+  + common        : boolean
+}
+
+class GrammarPoint <<Hanabira>> {
+  + id                  : int    <<PK>>
+  + pattern             : String
+  + meaning             : String
+  + jlpt_level          : String <<FK → JLPTLevel>>
+  + example_ids         : int[]  <<FK → ExampleSentence>>
+  + nuance_notes        : String
+  + formality           : String
+  + similar_pattern_ids : int[]
+}
+
+class WordList <<User data>> {
+  + id          : int    <<PK>>
+  + name        : String
+  + type        : String  ' premade | user
+  + source      : String
+  + vocab_ids   : int[]  <<FK → Vocabulary>>
+  + is_public   : boolean
+  + created_by  : int    <<FK → User>>
+  + tags        : String[]
+}
+
+class SRSCard <<User data>> {
+  + id           : int   <<PK>>
+  + vocab_id     : int   <<FK → Vocabulary>>
+  + user_id      : int   <<FK → User>>
+  + interval     : int
+  + ease_factor  : float
+  + due_date     : Date
+  + reps         : int
+  + lapses       : int
+}
+
+class User <<User data>> {
+  + id          : int    <<PK>>
+  + username    : String
+  + email       : String
+  + jlpt_goal   : String
+  + created_at  : Timestamp
+}
+
+' ──────────────────────────────────────────────
+' Relationships with multiplicity
+' ──────────────────────────────────────────────
+
+' Kanji <-> Radical (many-to-many, shared composition)
+Kanji "0..*" o-- "1..*" Radical : has radicals
+
+' Vocabulary uses Kanji characters
+Vocabulary "0..*" --> "1..*" Kanji : contains kanji
+
+' Vocabulary belongs to one JLPTLevel; level groups many vocab
+JLPTLevel "1" --> "0..*" Vocabulary : classifies
+
+' Vocabulary has one FrequencyData entry; data covers many vocab
+FrequencyData "1" --> "0..*" Vocabulary : ranks
+
+' Vocabulary has one PitchAccent entry; accent record covers many vocab
+PitchAccent "1" --> "0..*" Vocabulary : pronounces
+
+' Vocabulary appears in many ExampleSentences; sentence uses 1+ vocab
+Vocabulary "1..*" --> "0..*" ExampleSentence : illustrated by
+
+' GrammarPoint cites ExampleSentences
+GrammarPoint "0..*" ..> "1..*" ExampleSentence : uses
+
+' GrammarPoint belongs to one JLPTLevel
+GrammarPoint "0..*" ..> "1" JLPTLevel : belongs to
+
+' NameEntry references Kanji (names are written in kanji)
+NameEntry "0..*" ..> "1..*" Kanji : uses kanji
+
+' WordList aggregates Vocabulary items
+WordList "0..*" o-- "1..*" Vocabulary : contains
+
+' User owns WordLists
+User "1" --> "0..*" WordList : owns
+
+' SRSCard belongs to one Vocabulary entry; one vocab can have many cards
+SRSCard "0..*" --> "1" Vocabulary : reviews
+
+' User has many SRSCards
+User "1" --> "0..*" SRSCard : tracks
+
+@enduml
