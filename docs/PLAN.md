@@ -161,7 +161,7 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D5 | **Remove Spring Cloud Config** until a config server exists | No server; it adds startup noise for nothing |
 | D6 | Package names **unchanged** (`baddee` here, `badee` in the updater) | User's call; harmless |
 | D7 | **Package-by-feature** with `aop/controller/dto/integration/models/repository/services` per module (`aop/` added 2026-11-02, D30) | Matches the modular monolith in V03; already scaffolded |
-| D8 | **Public reads + hardening**: `permitAll` on `/api/**`, CORS allow-list, stateless, CSRF off, Actuator health/info only. Rate limiting later at the edge (API Gateway / CloudFront / WAF) | Public dictionary; no user auth in this service (D1) |
+| D8 | **Public reads + hardening**: `permitAll` on `/api/**`, CORS allow-list, stateless, CSRF off, Actuator health/info only. Rate limiting later at the edge (API Gateway / CloudFront / WAF). **Amended by D25** (2026-11-02): each module's own chain `permitAll`s its `/api/v1/<module>/**` and sets its CORS; the root catch-all chain denies `/api/**` paths no module claims, so no `/api` request succeeds until a module's chain exists (Phase 1) | Public dictionary; no user auth in this service (D1) |
 | D9 | **Spring Modulith** + `verify()` test | Enforces module boundaries in the build |
 | D10 | `search` is the **orchestrator**; each module owns its own queries and exposes a service API | Single search bar; no cross-module table access |
 | D11 | `lists` = **read-only default lists** only | Follows D1 |
@@ -171,7 +171,7 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D16 | **Own compose file** in this repo | Self-contained dev setup |
 | D17 | `search` ranks with **own tiered rules**, not raw ES scores | Scores are not comparable across indexes and Postgres |
 | D18 | **Names stay Postgres-only** | Keep the updater's architecture |
-| D19 | Compose on **5433/9201** + **committed seed data** + optional full load via the updater | Fast, repeatable dev data; runs beside the updater's stack |
+| D19 | Compose on **5433/9201** + **committed seed data** + optional full load via the updater. **Partly done** (2026-11-02): compose, schema, role and index setup exist; the seed data is deferred (D32) | Fast, repeatable dev data; runs beside the updater's stack |
 | D20 | **REST `/api/v1`** + springdoc OpenAPI + page/size pagination | Simple for any client; typed contract |
 | D22 | Testing **now**: controller-level unit tests per module (MockMvc, Mockito, Hamcrest) + Modulith `verify()`. **Later**: other testing (integration/Testcontainers with seed data, slice tests). The user adds these later | User's call |
 | D23 | **Read-only Postgres role** (and a read-only ES key in production) | Enforces read-only at the DB level |

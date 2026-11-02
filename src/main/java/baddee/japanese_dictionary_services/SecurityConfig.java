@@ -7,6 +7,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -14,7 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
  *
  * <p>Each feature module defines its own {@link SecurityFilterChain} in its
  * {@code integration/} package, limited with {@code securityMatcher("/api/v1/<module>/**")}
- * and a lower {@code @Order}, plus its own CORS from {@code app.cors.allowed-origins}.
+ * and an {@code @Order} value below {@code LOWEST_PRECEDENCE} (so it is checked first),
+ * plus its own CORS from {@code app.cors.allowed-origins}.
  * This chain runs last: it opens the API docs, Actuator health/info and the error
  * page, and denies everything else, including {@code /api/**} paths no module claims.
  */
@@ -37,5 +40,14 @@ public class SecurityConfig {
 			.logout(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 		return http.build();
+	}
+
+	/**
+	 * No users exist (D1). An empty store stops Boot from creating a default user with a
+	 * generated password.
+	 */
+	@Bean
+	UserDetailsService noUsers() {
+		return new InMemoryUserDetailsManager();
 	}
 }

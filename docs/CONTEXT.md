@@ -105,7 +105,9 @@ tracks this.
 ## Module layout (package-by-feature, Spring Modulith)
 
 Root package: `baddee.japanese_dictionary_services`. Each feature module has
-`aop/ controller/ dto/ integration/ models/ repository/ services/`.
+`aop/ controller/ dto/ integration/ models/ repository/ services/`. This is the target layout.
+Git does not track empty folders, so each folder appears when its first class is written
+(`aop/` and the module security chain in `integration/` start in Phase 1).
 
 | Module | Responsibility |
 |---|---|
@@ -151,7 +153,8 @@ Package conventions:
 - Security: public reads (each module's chain `permitAll`s its own `/api/v1/<module>/**`), CORS
   allow-list, stateless, only Actuator health/info exposed.
 - Config: connection settings are env vars with local defaults (`DB_URL`, `DB_USERNAME`,
-  `DB_PASSWORD`, `ES_URIS`, `CORS_ALLOWED_ORIGINS`), D27.
+  `DB_PASSWORD`, `ES_URIS`, `CORS_ALLOWED_ORIGINS`), D27. The `prod` profile
+  (`application-prod.properties`) has no defaults, so a missing env var fails startup.
 - The updater uses Java 26 / Boot 4.1.1 and package `badee` (one "d"). The repos are independent. This difference is intentional.
 
 ## Running locally

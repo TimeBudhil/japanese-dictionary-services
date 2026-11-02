@@ -33,13 +33,20 @@ public class RequestIdFilter extends OncePerRequestFilter {
 	/** Accept caller ids only if short and plain, so they cannot inject into logs. */
 	private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9._-]{1,64}");
 
+	/** Keeps the id on the request so the later error dispatch to /error reuses it. */
+	private static final String ATTRIBUTE = RequestIdFilter.class.getName() + ".id";
+
+	/** Also run on the error dispatch, so logs written while rendering /error keep the id. */
+	@Override
+	protected boolean shouldNotFilterErrorDispatch() {
+		return false;
+	}
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
-		String incoming = request.getHeader(HEADER);
-		String requestId = incoming != null && SAFE_ID.matcher(incoming).matches()
-				? incoming
-				: UUID.randomUUID().toString();
+		String requestId = resolveRequestId(request);
+		request.setAttribute(ATTRIBUTE, requestId);
 
 		MDC.put(MDC_KEY, requestId);
 		response.setHeader(HEADER, requestId);
@@ -49,5 +56,15 @@ public class RequestIdFilter extends OncePerRequestFilter {
 		finally {
 			MDC.remove(MDC_KEY);
 		}
+	}
+
+	private static String resolveRequestId(HttpServletRequest request) {
+		if (request.getAttribute(ATTRIBUTE) instanceof String existing) {
+			return existing;
+		}
+		String incoming = request.getHeader(HEADER);
+		return incoming != null && SAFE_ID.matcher(incoming).matches()
+				? incoming
+				: UUID.randomUUID().toString();
 	}
 }
