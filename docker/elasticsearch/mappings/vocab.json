@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "refresh_interval": "1s"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "_class": { "type": "keyword", "index": false, "doc_values": false },
+      "kanji": { "type": "keyword" },
+      "readings": { "type": "keyword" },
+      "glosses": { "type": "text" },
+      "common": { "type": "boolean" }
+    }
+  }
+}

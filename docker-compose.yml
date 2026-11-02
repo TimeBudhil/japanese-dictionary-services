@@ -1,0 +1,57 @@
+# Local dev stack for the dictionary service (D16, D19).
+# Ports 5433/9201 so it can run beside the updater's stack (5432/9200).
+# Credentials are local-only dev values. Production uses real secrets via env vars.
+services:
+  postgres:
+    image: postgres:16
+    container_name: dictionary-postgres
+    environment:
+      POSTGRES_DB: dictionary
+      POSTGRES_USER: dictionary_owner
+      POSTGRES_PASSWORD: dictionary_owner
+      DB_READER_PASSWORD: dictionary_reader
+    ports:
+      - "5433:5432"
+    volumes:
+      - dictionary-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dictionary_owner -d dictionary"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: dictionary-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9201:9200"
+    volumes:
+      - dictionary-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  # One-shot: creates the indexes (if missing) and bulk-loads any seed files.
+  elasticsearch-init:
+    image: curlimages/curl:8.10.1
+    container_name: dictionary-elasticsearch-init
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ES_URL: http://elasticsearch:9200
+    volumes:
+      - ./docker/elasticsearch:/es-init:ro
+    entrypoint: ["sh", "/es-init/init.sh"]
+    restart: "no"
+
+volumes:
+  dictionary-postgres-data:
+  dictionary-elasticsearch-data:

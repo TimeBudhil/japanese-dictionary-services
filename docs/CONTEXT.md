@@ -3,7 +3,7 @@
 Stable facts about this service. Read this first. For tasks, implementation details,
 and the decision log, see [`PLAN.md`](./PLAN.md).
 
-_Last updated: 2026-10-28_
+_Last updated: 2026-11-02_
 
 ## What the application is
 
@@ -61,8 +61,8 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 | `reading` | `id` PK, `ent_seq` FK, `text`, `kanji` bool | `kanji=true` → kanji writing (keb), false → kana reading (reb) |
 | `sense` | `id` PK, `ent_seq` FK | one meaning of an entry |
 | `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc` | element collections. JMdict `<field>` and `<dial>` tags are **not stored** |
-| `example_sentence` | `id` PK, `japanese`, `english`, `index_words`, `source` | `index_words` = space-separated headwords (loose link to vocab, no FK) |
-| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `text[]` |
+| `example_sentence` | `id` PK, `japanese`, `english`, `index_words`, `source` | `index_words` = space-separated headwords (loose link to vocab, no FK). `japanese`/`english`/`index_words` are **`oid` large objects** (updater maps them `@Lob`), see X7 |
+| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `varchar(255) array` |
 | `radical` | `character` PK, `stroke_count` | RADKFILE radicals |
 | `kanji_radical` | `kanji` FK, `radical` FK | many-to-many |
 | `name_entry` | `ent_seq` PK, `kanji[]`, `readings[]`, `name_types[]`, `translations[]` | ~740k rows |
@@ -81,10 +81,31 @@ in the updater (see PLAN.md, decision D14).
 Source of truth for the schema is the updater's entity classes:
 `japanese-dictionary-updater-component/src/main/java/badee/updaterComponent/spokes/*/domain/` and `*/search/`.
 
+The exact DDL is in `docker/postgres/init/01-schema.sql` and the exact ES mappings are in
+`docker/elasticsearch/mappings/`. Both were **generated offline** from the updater's classes
+(Hibernate 7.4.5 `PostgreSQLDialect` schema export; Spring Data ES `MappingBuilder`), not
+hand-written. All plain strings are `varchar(255)`; booleans are nullable.
+
+### Pending verification (needs Docker)
+
+The schema and mappings above were generated **without a running database** (no Docker on
+the dev machine, 2026-11-02). Before relying on them, check them against a real database on
+a machine with Docker:
+1. Boot the updater against an empty Postgres, then compare
+   `pg_dump --schema-only` with `docker/postgres/init/01-schema.sql`.
+2. Run an updater load, then compare `GET /vocab/_mapping` and `GET /example-sentence/_mapping`
+   with `docker/elasticsearch/mappings/*.json` (expect an extra dynamic `id` field).
+3. `docker compose up -d`, then `./mvnw spring-boot:run`: `ddl-auto=validate` must pass,
+   `/actuator/health` must be UP, and `/swagger-ui.html` must load.
+4. Connect as `dictionary_reader`: `SELECT` works and `INSERT` fails.
+
+Remove this section when all four pass. The PLAN.md Phase 0 box "Verify on a Docker machine"
+tracks this.
+
 ## Module layout (package-by-feature, Spring Modulith)
 
 Root package: `baddee.japanese_dictionary_services`. Each feature module has
-`controller/ dto/ integration/ models/ repository/ services/`.
+`aop/ controller/ dto/ integration/ models/ repository/ services/`.
 
 | Module | Responsibility |
 |---|---|
@@ -96,35 +117,82 @@ Root package: `baddee.japanese_dictionary_services`. Each feature module has
 | `parsing` | Input identification (English / romaji / Japanese), inflection parse (deinflection), sentence parse (tokenize) |
 | `search` | **Orchestrator**: normalize/parse input → call the other modules' public services → merge + rank with its own tiered rules |
 | `lists` | Read-only premade default lists (common words, JLPT, POS, …). Built last |
-| `shared` _(planned)_ | Modulith OPEN module: security, CORS, error format, logging/tracing config |
+
+There is **no `shared` module** (D25). App-level pieces that act before any module sit in the
+**root package** (not a Modulith module), and no module imports them:
+
+| Root class | Role |
+|---|---|
+| `SecurityConfig` | Catch-all chain, runs last: API docs, Actuator health/info and `/error` open; everything else (incl. unclaimed `/api/**`) denied. Stateless, no CSRF/login |
+| `RequestIdFilter` | One id per request from `X-Request-Id` (or generated) → MDC key `requestId` + response header |
+| `UnexpectedErrorHandler` | Last-resort 500 as RFC 9457 `ProblemDetail`, no internals leaked |
 
 Package conventions:
 - `models/`: read-only `@Immutable` JPA entities.
 - `repository/`: Spring Data JPA, read methods only.
-- `integration/`: ES documents/clients, adapters to other modules, and module plumbing (logging, tracing).
+- `integration/`: ES documents/clients, adapters to other modules, and module plumbing. This includes
+  the module's own `SecurityFilterChain` (`securityMatcher("/api/v1/<module>/**")`, `permitAll`,
+  stateless) and its CORS, read from the one key `app.cors.allowed-origins` (D25).
+- `aop/`: the module's own logging aspects (e.g. service call + timing). Read the request id with
+  `MDC.get("requestId")`; never import root classes (D30).
+- Errors: each module owns its exceptions, extending Spring's `ErrorResponseException`
+  (status + detail). `spring.mvc.problemdetails.enabled=true` renders them (D29).
+- Pagination: controllers take `page` (`@Min(0)`, default 0) and `size` (`@Min(1) @Max(100)`,
+  default 20; over 100 → 400) and return `Page<Dto>`, serialized `via-dto` (D28).
 - No module queries another module's tables. It calls that module's service instead.
 
 ## Tech stack
 
 - Java **25**, Spring Boot **4.1.2**, Maven wrapper (`./mvnw`).
-- Spring Web MVC, Data JPA (Postgres), Data Elasticsearch, Security, Actuator.
-- Planned: Spring Modulith, springdoc-openapi, Postgres driver. `spring-cloud-starter-config` is being removed.
-- API: REST + JSON under `/api/v1/...`, OpenAPI/Swagger UI, page/size pagination.
-- Security: public reads (`permitAll` on `/api/**`), CORS allow-list, stateless, only Actuator health/info exposed.
+- Spring Web MVC, Data JPA (Postgres driver), Data Elasticsearch, Security, Validation, Actuator.
+- Spring Modulith **2.1.2** (built against Boot 4.1.2) and springdoc-openapi **3.2.0** (parent Boot 4.1.2).
+  Spring Cloud Config was removed (D5).
+- API: REST + JSON under `/api/v1/...`, OpenAPI/Swagger UI (`/swagger-ui.html`), page/size pagination.
+- Security: public reads (each module's chain `permitAll`s its own `/api/v1/<module>/**`), CORS
+  allow-list, stateless, only Actuator health/info exposed.
+- Config: connection settings are env vars with local defaults (`DB_URL`, `DB_USERNAME`,
+  `DB_PASSWORD`, `ES_URIS`, `CORS_ALLOWED_ORIGINS`), D27.
 - The updater uses Java 26 / Boot 4.1.1 and package `badee` (one "d"). The repos are independent. This difference is intentional.
 
-## Running locally (planned, Phase 0 in PLAN.md)
+## Running locally
 
-This repo will have its **own** `docker-compose.yml`: Postgres on **5433** and ES on **9201**
-(so it can run beside the updater's stack on 5432/9200). It will auto-load a small
-committed **seed dataset**. For the full dictionary, run the updater once with its
-datasource/ES URIs pointed at 5433/9201.
+This repo has its **own** `docker-compose.yml`: Postgres on **5433** and ES on **9201**
+(so it can run beside the updater's stack on 5432/9200). Not yet run; see
+[Pending verification](#pending-verification-needs-docker).
 
 ```bash
-docker compose up -d
-./mvnw test
-./mvnw spring-boot:run
+docker compose up -d      # postgres, elasticsearch, one-shot elasticsearch-init
+./mvnw test               # needs no infra (Modulith verify; contextLoads is @Disabled)
+./mvnw spring-boot:run    # needs the stack
 ```
+
+What the stack sets up on first start (empty volumes):
+
+| Piece | File | Does |
+|---|---|---|
+| Postgres DB `dictionary`, owner `dictionary_owner` | `docker-compose.yml` | Local dev credentials only |
+| Schema | `docker/postgres/init/01-schema.sql` | Mirrors the updater schema so `validate` passes |
+| Read-only role `dictionary_reader` | `docker/postgres/init/02-readonly-role.sh` | `SELECT` on all tables + default privileges for tables `dictionary_owner` creates later |
+| Seed data | `docker/postgres/init/03-seed.sql`, `docker/elasticsearch/seed/<index>.ndjson` | **Not written yet** (waits for a Docker machine) |
+| ES indexes `vocab`, `example-sentence` | `docker/elasticsearch/init.sh` + `mappings/` | Creates missing indexes, bulk-loads any seed files. `number_of_replicas=0` so one node is green |
+
+Init scripts only run on an **empty** volume. To re-run them: `docker compose down -v`, then `up -d`.
+
+**Full load** (the whole dictionary instead of seed data). Start from empty volumes, then run
+the updater once against this stack **as the owner**, so the reader's default privileges apply:
+
+```bash
+# in ~/repos/japanese-dictionary-updater-component
+./mvnw spring-boot:run \
+  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:postgresql://localhost:5433/dictionary \
+  --spring.datasource.username=dictionary_owner --spring.datasource.password=dictionary_owner \
+  --spring.elasticsearch.uris=http://localhost:9201"
+```
+
+Known gap: sentence text written by the updater is in large objects, and Postgres 16 has no
+default privileges for those. Until X7, `dictionary_reader` cannot read full-load sentence text.
+A workaround for local use only: as owner, run
+`DO $$ DECLARE o oid; BEGIN FOR o IN SELECT oid FROM pg_largeobject_metadata LOOP EXECUTE format('GRANT SELECT ON LARGE OBJECT %s TO dictionary_reader', o); END LOOP; END $$;`
 
 ## Glossary
 

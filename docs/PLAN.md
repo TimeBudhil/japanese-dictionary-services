@@ -2,7 +2,7 @@
 
 Tasks, implementation details, and decisions. Background facts are in [`CONTEXT.md`](./CONTEXT.md).
 
-_Last updated: 2026-10-28_
+_Last updated: 2026-11-02_
 
 **How to use this file**
 - Work phases in order. Tick tasks with `[x]` when done.
@@ -12,9 +12,10 @@ _Last updated: 2026-10-28_
 
 ## Status
 
-- Skeleton only: Spring Boot app, feature module folders (empty), and one empty
-  `vocabulary/repository/vocabularyRepository.java`. No config, compose, or tests beyond `contextLoads`.
-- **Current phase: Phase 0.**
+- Phase 0 code is written and `./mvnw test` is green (Modulith `verify()`; `contextLoads` `@Disabled`).
+  It was written on a machine **without Docker** (2026-11-02), so two Phase 0 boxes stay open:
+  the **seed dataset** and **verify on a Docker machine** (see CONTEXT.md, "Pending verification").
+- **Next: Phase 1 (vocabulary).** It can start now. Do the two open Phase 0 boxes when a Docker machine is available.
 
 ## Build order
 
@@ -26,39 +27,41 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 ## Phase 0 — Foundation
 
 **pom.xml**
-- [ ] Remove `spring-cloud-starter-config`, the `spring-cloud.version` property, and the `spring-cloud-dependencies` BOM (D5).
-- [ ] Add the Postgres driver (`org.postgresql:postgresql`, runtime).
-- [ ] Add Spring Modulith (`spring-modulith-starter-core`, `spring-modulith-starter-test`, plus the `spring-modulith-bom`). Check that the version is compatible with Boot 4.1 (D9).
-- [ ] Add `springdoc-openapi-starter-webmvc-ui`, and check that the version is compatible with Boot 4 (D20).
+- [x] Remove `spring-cloud-starter-config`, the `spring-cloud.version` property, and the `spring-cloud-dependencies` BOM (D5).
+- [x] Add the Postgres driver (`org.postgresql:postgresql`, runtime).
+- [x] Add Spring Modulith (`spring-modulith-starter-core`, `spring-modulith-starter-test`, plus the `spring-modulith-bom`). **2.1.2**, built against Boot 4.1.2 (D9).
+- [x] Add `springdoc-openapi-starter-webmvc-ui`. **3.2.0**, parent Boot 4.1.2 (D20).
+- [x] Add `spring-boot-starter-validation` (for `@Min/@Max` on `page`/`size`, D28).
 
 **Config (`application.properties`)**
-- [ ] Datasource `jdbc:postgresql://localhost:5433/...` with the **read-only role** (D23).
-- [ ] `spring.jpa.hibernate.ddl-auto=validate` (D3), `spring.jpa.open-in-view=false`.
-- [ ] `spring.elasticsearch.uris=http://localhost:9201`.
-- [ ] Actuator: expose `health,info` only.
-- [ ] CORS allow-list property (e.g. `app.cors.allowed-origins`).
+- [x] Datasource `jdbc:postgresql://localhost:5433/dictionary` with the **read-only role** `dictionary_reader` (D23), via env vars with local defaults (D27).
+- [x] `spring.jpa.hibernate.ddl-auto=validate` (D3), `spring.jpa.open-in-view=false`.
+- [x] `spring.elasticsearch.uris=http://localhost:9201`.
+- [x] Actuator: expose `health,info` only.
+- [x] CORS allow-list property `app.cors.allowed-origins` (one key for all modules, D25).
+- [x] `spring.mvc.problemdetails.enabled=true` (D29), `spring.data.web.pageable.serialization-mode=via-dto` (D28), `logging.pattern.correlation` with `requestId` (D30).
 
 **Local infra (D16, D19)**
-- [ ] `docker-compose.yml`: `postgres:16` on 5433, `elasticsearch:8.15.3` on 9201 (same versions as the updater), with healthchecks and named volumes.
-- [ ] Postgres init scripts (`/docker-entrypoint-initdb.d`):
-  1. DDL that mirrors the updater schema (see CONTEXT.md). This is needed because `validate` requires the tables to exist, and only the updater creates them. Once the updater has Flyway (X1), copy or reuse its migrations instead of hand-written DDL.
-  2. Create the read-only role (`GRANT SELECT` on all tables, plus default privileges).
-  3. Seed data SQL.
-- [ ] ES seed: index mappings (copy the updater's; add kuromoji/ICU fields once X2 lands, which needs a custom ES image with the plugins) and a bulk JSON file, loaded by a one-shot `curl` container.
-- [ ] Seed dataset (a few hundred rows) covering edge cases: multi-reading word, kana-only word, conjugatable verb (る/う verbs), `common` vs non-common, slang misc tag, kanji with radicals and stroke paths, kana-only name, sentence whose `index_words` hit seeded vocab.
-- [ ] Document the "full load" steps: run the updater with `spring.datasource.url=...:5433/...` and `spring.elasticsearch.uris=...:9201`.
+- [x] `docker-compose.yml`: `postgres:16` on 5433, `elasticsearch:8.15.3` on 9201 (same versions as the updater), with healthchecks and named volumes, plus a one-shot `elasticsearch-init` curl container.
+- [x] Postgres init scripts (`docker/postgres/init/`):
+  1. [x] `01-schema.sql`: DDL that mirrors the updater schema, **generated** from the updater's entities with Hibernate (D31). Once the updater has Flyway (X1), reuse its migrations instead.
+  2. [x] `02-readonly-role.sh`: read-only role (`GRANT SELECT` on all tables, plus default privileges). Large objects need per-object grants (X7).
+  3. [ ] `03-seed.sql`: seed data. Deferred to a Docker machine (D32). Must `GRANT SELECT ON LARGE OBJECT` for each sentence LO it creates.
+- [x] ES: index mappings in `docker/elasticsearch/mappings/` (generated from the updater's documents, D31; add kuromoji/ICU fields once X2 lands, which needs a custom ES image with the plugins), loaded by `docker/elasticsearch/init.sh`. It also bulk-loads `docker/elasticsearch/seed/<index>.ndjson` if present.
+- [ ] Seed dataset (Postgres SQL + ES ndjson) covering edge cases: multi-reading word, kana-only word, conjugatable verb (る/う verbs), `common` vs non-common, slang misc tag, kanji with radicals and stroke paths, kana-only name, sentence whose `index_words` hit seeded vocab. **Deferred to a Docker machine (D32).**
+- [x] Document the "full load" steps (CONTEXT.md, "Running locally").
+- [ ] **Verify on a Docker machine**: the 4 checks in CONTEXT.md, "Pending verification" (schema vs real `pg_dump`, ES mappings, app boots with `validate`, read-only role). Then remove that section.
 
-**`shared` module (D13)**
-- [ ] `shared/package-info.java` with `@ApplicationModule(type = ApplicationModule.Type.OPEN)`.
-- [ ] `SecurityConfig`: `permitAll` on `/api/**`, Swagger UI, and `/actuator/health|info`. Deny all else. Stateless, CSRF off, CORS from the allow-list (D8).
-- [ ] `@RestControllerAdvice` returning `ProblemDetail` (RFC 9457) for 400/404/500.
-- [ ] Logging/tracing config (request id / correlation id filter). Leave the tracing backend open (see O4).
-- [ ] Pagination convention: `page`, `size` (max cap) → a page DTO.
+**App-level, root package (D25; replaces the `shared` module of D13)**
+- [x] `SecurityConfig`: catch-all chain, `@Order(LOWEST_PRECEDENCE)`. Swagger UI/API docs, `/actuator/health|info` and `/error` open; deny all else. Stateless, CSRF/basic/form login off (D8). Each module's own chain + CORS comes with its first controller.
+- [x] Errors: `UnexpectedErrorHandler` (last-resort 500 `ProblemDetail`, RFC 9457). 400/404 come from Boot's ProblemDetail handler and the modules' own `ErrorResponseException`s (D29).
+- [x] `RequestIdFilter`: `X-Request-Id` in/out, MDC key `requestId`. The tracing backend stays open (O4) (D30).
+- [x] Pagination convention: `page`/`size` with `@Min/@Max` per controller (default 20, max 100, over max → 400), `Page<Dto>` serialized `via-dto` (D28).
 
 **Tests / housekeeping**
-- [ ] `ModularityTests`: `ApplicationModules.of(JapaneseDictionaryServicesApplication.class).verify()` (D9).
-- [ ] `contextLoads` needs a live DB/ES. Either `@Disabled` it (as the updater did) or leave it until later tests (D22).
-- [ ] Rename `vocabularyRepository` → `VocabularyRepository`. Prefer extending `Repository<VocabEntry, Long>` with `find*` methods only, so no `save`/`delete` is exposed (read-only by design).
+- [x] `ModularityTests`: `ApplicationModules.of(JapaneseDictionaryServicesApplication.class).verify()` (D9).
+- [x] `contextLoads` is `@Disabled` (needs a live DB/ES) (D22).
+- [x] Rename `vocabularyRepository` → `VocabularyRepository` (empty interface for now). In Phase 1, extend `Repository<VocabEntry, Long>` with `find*` methods only, so no `save`/`delete` is exposed (read-only by design).
 
 ## Phase 1 — vocabulary
 
@@ -67,7 +70,10 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 - [ ] `integration/`: read-only `VocabDocument` (index `vocab`) + an ES query client that returns **candidates** with a match tier (exact on `kanji`/`readings`, prefix, gloss full-text).
 - [ ] `services/`: public API used by `search`: `findByEntSeq`, `findCandidates(query, …)`.
 - [ ] `dto/`: entry detail (readings split kanji/kana, senses with glosses/pos/misc, common).
-- [ ] `controller/`: `GET /api/v1/vocabulary/{entSeq}`, `GET /api/v1/vocabulary?q=&page=&size=`.
+- [ ] `controller/`: `GET /api/v1/vocabulary/{entSeq}`, `GET /api/v1/vocabulary?q=&page=&size=` (pagination per D28).
+- [ ] `integration/`: the module's `SecurityFilterChain` (`securityMatcher("/api/v1/vocabulary/**")`, `permitAll`, stateless, CSRF off, `@Order` before the root chain) and its CORS (`GET/HEAD/OPTIONS`, origins from `app.cors.allowed-origins`, expose `X-Request-Id`) (D25). This is the template for the other modules.
+- [ ] Exceptions: e.g. `VocabEntryNotFoundException extends ErrorResponseException` (404) (D29).
+- [ ] `aop/`: logging aspect for the module's service calls (D30).
 - [ ] Controller unit tests (MockMvc + Mockito + Hamcrest) (D22).
 
 ## Phase 2 — kanji
@@ -137,6 +143,7 @@ Tracked here so they're not forgotten. Do them in the updater repo.
 | X4 | Update stale `NEXT_STEPS.md` (Kanji + JMnedict spokes are implemented) | housekeeping |
 | X5 | (If needed) GIN / `pg_trgm` indexes on `name_entry` arrays via Flyway | Phase 3 |
 | X6 | (Later) word-level JLPT source ingestion, once O3 is decided | Phase 8 |
+| X7 | Map `example_sentence.japanese/english/index_words` to `text`, not `@Lob` (which makes Postgres `oid` large objects), e.g. `@JdbcTypeCode(SqlTypes.LONGVARCHAR)`. Do it as a Flyway migration (X1). Then update this repo's `01-schema.sql` and drop the per-LO grants. Reason: large objects need per-object `GRANT`s (no default privileges in Postgres 16), so the read-only role can't read full-load sentences | Phase 4 |
 
 ---
 
@@ -153,13 +160,13 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D4 | Java versions **independent per repo** (25 here, 26 in the updater) | Repos are independent; user's call |
 | D5 | **Remove Spring Cloud Config** until a config server exists | No server; it adds startup noise for nothing |
 | D6 | Package names **unchanged** (`baddee` here, `badee` in the updater) | User's call; harmless |
-| D7 | **Package-by-feature** with `controller/dto/integration/models/repository/services` per module | Matches the modular monolith in V03; already scaffolded |
+| D7 | **Package-by-feature** with `aop/controller/dto/integration/models/repository/services` per module (`aop/` added 2026-11-02, D30) | Matches the modular monolith in V03; already scaffolded |
 | D8 | **Public reads + hardening**: `permitAll` on `/api/**`, CORS allow-list, stateless, CSRF off, Actuator health/info only. Rate limiting later at the edge (API Gateway / CloudFront / WAF) | Public dictionary; no user auth in this service (D1) |
 | D9 | **Spring Modulith** + `verify()` test | Enforces module boundaries in the build |
 | D10 | `search` is the **orchestrator**; each module owns its own queries and exposes a service API | Single search bar; no cross-module table access |
 | D11 | `lists` = **read-only default lists** only | Follows D1 |
-| D12 | `integration/` = ES docs/clients + cross-module adapters + module plumbing (logging, tracing) | Keeps controller/services clean |
-| D13 | **`shared` OPEN module** for app-wide config (security, CORS, errors, tracing) | Idiomatic Modulith; `verify()` stays green |
+| D12 | `integration/` = ES docs/clients + cross-module adapters + module plumbing (tracing, the module's security chain + CORS, D25). Logging aspects go in `aop/` (D30) | Keeps controller/services clean |
+| D13 | ~~**`shared` OPEN module** for app-wide config (security, CORS, errors, tracing)~~ **Superseded by D25** (2026-11-02) | Idiomatic Modulith; `verify()` stays green |
 | D14 | The updater adds **kuromoji + ICU** analyzers (X2) | The analyzer controls candidate quality; `search` ranks on top |
 | D16 | **Own compose file** in this repo | Self-contained dev setup |
 | D17 | `search` ranks with **own tiered rules**, not raw ES scores | Scores are not comparable across indexes and Postgres |
@@ -169,6 +176,15 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D22 | Testing **now**: controller-level unit tests per module (MockMvc, Mockito, Hamcrest) + Modulith `verify()`. **Later**: other testing (integration/Testcontainers with seed data, slice tests). The user adds these later | User's call |
 | D23 | **Read-only Postgres role** (and a read-only ES key in production) | Enforces read-only at the DB level |
 | D24 | Build order as in [Build order](#build-order). Parsing comes before search | User's call |
+| D25 | _(2026-11-02)_ **No `shared` module.** Pieces that act before any module go in the **root package** (not a module, imported by no module): catch-all `SecurityConfig`, `RequestIdFilter`, `UnexpectedErrorHandler`. Each module owns its `SecurityFilterChain` + CORS in `integration/` (written with its first controller), reading the one key `app.cors.allowed-origins`. Fully per-module was considered: it works, but it loses the deny-all net for paths no module owns, and Boot's default login locks every URL until the first module chain exists | User wants no shared infrastructure that modules rely on; the root pieces are app-level, not module code |
+| D26 | _(2026-11-02)_ Mirror the updater's `oid` (large object) sentence columns exactly; fix them in the updater (X7) | `validate` must match the real schema; the read-only role can't use default privileges on LOs |
+| D27 | _(2026-11-02)_ Connection settings are **env vars with local defaults** (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `ES_URIS`, `CORS_ALLOWED_ORIGINS`). Only local dev credentials are committed | Works out of the box locally; production overrides without code changes |
+| D28 | _(2026-11-02)_ Pagination: `page` (`@Min(0)`, default 0) + `size` (`@Min(1) @Max(100)`, default 20) on each controller. Over max → **400**, not clamped. Return `Page<Dto>`, serialized `via-dto` | Clear contract; no shared pagination classes |
+| D29 | _(2026-11-02)_ Errors: **modules own their exceptions** (extend `ErrorResponseException`). `spring.mvc.problemdetails.enabled=true` renders them and Spring's own errors as RFC 9457. A root `UnexpectedErrorHandler` covers unexpected 500s | The root never needs to know any module; one format for the whole API |
+| D30 | _(2026-11-02)_ Logging: root `RequestIdFilter` (`X-Request-Id`, MDC `requestId`). Each module gets an **`aop/`** folder for its own logging aspects, which read the id via `MDC.get("requestId")` | A request id must exist before any module runs; module logging stays per-module (firmer modular design, accepting repetition) |
+| D31 | _(2026-11-02)_ Schema DDL and ES mappings are **generated offline** from the updater's classes (Hibernate schema export; Spring Data ES `MappingBuilder`), not hand-written. Verify against a real DB later | No Docker on the dev machine; hand-written DDL had already missed the `oid` columns |
+| D32 | _(2026-11-02)_ **Seed dataset deferred** until a machine with Docker is available | Seed data should be checked against a running stack |
+| D33 | _(2026-11-02)_ **Security is not Cognito's job here.** Cognito authenticates users; this API has none (D1). Cognito belongs to the future user service, the updater's admin API, or an API Gateway in front (O4). Removing Spring Security entirely was considered and rejected; the per-module chains stay | Keep in-app hardening (deny-all net, security headers) |
 
 ## Open decisions
 
