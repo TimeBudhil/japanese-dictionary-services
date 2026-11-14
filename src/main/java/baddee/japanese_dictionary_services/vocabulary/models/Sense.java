@@ -13,7 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Immutable;
 
 /**
@@ -27,8 +28,10 @@ import org.hibernate.annotations.Immutable;
  * ({@code gloss_order}, {@code pos_order}, {@code misc_order}). The updater adds these in
  * X8 (D34); this class already expects them.
  *
- * <p>The three collections are loaded lazily, in batches across many senses
- * ({@link BatchSize}), so a page of entries costs a fixed number of queries, not one per sense.
+ * <p>The three collections load lazily with {@link FetchMode#SUBSELECT}: touching one sense's
+ * glosses loads the glosses of <b>every</b> sense from the same query in one SQL statement. So
+ * each collection costs one query per page, however many senses the page has. (A
+ * {@code @BatchSize} would count senses, not entries: a page of 100 entries has 200–300 senses.)
  */
 @Entity
 @Immutable
@@ -44,7 +47,7 @@ public class Sense {
 	@CollectionTable(name = "sense_gloss", joinColumns = @JoinColumn(name = "sense_id"))
 	@OrderColumn(name = "gloss_order")
 	@Column(name = "gloss")
-	@BatchSize(size = VocabEntry.BATCH_SIZE)
+	@Fetch(FetchMode.SUBSELECT)
 	private List<String> glosses = new ArrayList<>();
 
 	@Immutable
@@ -52,7 +55,7 @@ public class Sense {
 	@CollectionTable(name = "sense_pos", joinColumns = @JoinColumn(name = "sense_id"))
 	@OrderColumn(name = "pos_order")
 	@Column(name = "pos")
-	@BatchSize(size = VocabEntry.BATCH_SIZE)
+	@Fetch(FetchMode.SUBSELECT)
 	private List<String> partsOfSpeech = new ArrayList<>();
 
 	@Immutable
@@ -60,7 +63,7 @@ public class Sense {
 	@CollectionTable(name = "sense_misc", joinColumns = @JoinColumn(name = "sense_id"))
 	@OrderColumn(name = "misc_order")
 	@Column(name = "misc")
-	@BatchSize(size = VocabEntry.BATCH_SIZE)
+	@Fetch(FetchMode.SUBSELECT)
 	private List<String> miscTags = new ArrayList<>();
 
 	/** For JPA only. */

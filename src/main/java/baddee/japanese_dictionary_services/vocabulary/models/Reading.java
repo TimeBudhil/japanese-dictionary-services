@@ -27,9 +27,9 @@ public class Reading {
 	@Column(name = "text", nullable = false)
 	private String text;
 
-	/** True for a kanji writing (keb), false for a kana reading (reb). */
+	/** True for a kanji writing (keb), false for a kana reading (reb). Nullable in the schema. */
 	@Column(name = "kanji")
-	private boolean kanji;
+	private Boolean kanji;
 
 	/** For JPA only. */
 	protected Reading() {
@@ -43,7 +43,8 @@ public class Reading {
 		return text;
 	}
 
+	/** False (kana reading) when the column is null. */
 	public boolean isKanji() {
-		return kanji;
+		return Boolean.TRUE.equals(kanji);
 	}
 }

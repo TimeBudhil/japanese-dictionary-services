@@ -10,6 +10,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import baddee.japanese_dictionary_services.vocabulary.MatchTier;
 import baddee.japanese_dictionary_services.vocabulary.VocabCandidate;
+import baddee.japanese_dictionary_services.vocabulary.VocabPageTooDeepException;
 
 /**
  * Searches the {@code vocab} index for candidates and tags each with a {@link MatchTier}.
@@ -58,25 +60,31 @@ public class VocabSearchClient {
 	}
 
 	/**
-	 * Candidates for {@code query}, one page at a time. A blank query returns an empty page.
+	 * Candidates for {@code query}, one page at a time. A blank query returns an empty page
+	 * (whatever the page). Any {@code Sort} on {@code pageable} is ignored: the order is always
+	 * best first (D36).
 	 *
 	 * @throws VocabPageTooDeepException if the page ends past the first 10,000 hits
 	 */
 	public Page<VocabCandidate> findCandidates(String query, Pageable pageable) {
-		if (pageable.getOffset() + pageable.getPageSize() > MAX_RESULT_WINDOW) {
-			throw new VocabPageTooDeepException(MAX_RESULT_WINDOW);
-		}
 		String text = query == null ? "" : query.strip();
 		if (text.isEmpty()) {
 			return Page.empty(pageable);
 		}
+		if (pageable.getOffset() + pageable.getPageSize() > MAX_RESULT_WINDOW) {
+			throw new VocabPageTooDeepException(MAX_RESULT_WINDOW);
+		}
+		// Page number and size only: a caller's Sort would be added after ours and break the order.
+		Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
 		NativeQuery request = NativeQuery.builder()
 				.withQuery(candidateQuery(text))
+				// TODO(Docker check): add a unique last sort key (e.g. the dynamic `id` field) so
+				// equal-score hits keep a stable order across pages. See PLAN.md Phase 1.
 				.withSort(
 						SortOptions.of(s -> s.score(sc -> sc.order(SortOrder.Desc))),
 						SortOptions.of(s -> s.field(f -> f.field(VocabDocument.COMMON).order(SortOrder.Desc))))
-				.withPageable(pageable)
+				.withPageable(page)
 				.withTrackTotalHits(true)
 				.build();
 
@@ -84,7 +92,7 @@ public class VocabSearchClient {
 		List<VocabCandidate> candidates = hits.getSearchHits().stream()
 				.map(VocabSearchClient::toCandidate)
 				.toList();
-		return new PageImpl<>(candidates, pageable, hits.getTotalHits());
+		return new PageImpl<>(candidates, page, hits.getTotalHits());
 	}
 
 	static Query candidateQuery(String text) {

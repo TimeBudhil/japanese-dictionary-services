@@ -23,12 +23,15 @@ import org.hibernate.annotations.Immutable;
  * because this service only reads. Both lists are ordered by id, which follows JMdict
  * document order since the updater inserts them in that order with identity ids.
  *
- * <p>No N+1: the collections are lazy and load in batches ({@link BatchSize}) across all
- * entries in the persistence context. Loading a page of entries costs a fixed number of
- * queries (entries, readings, senses, glosses, POS, misc), whatever the page size. They are
- * not join-fetched, because two {@code List}s in one join fetch fail in Hibernate
- * (MultipleBagFetchException) and multiply the rows. Read them inside a transaction
- * ({@code open-in-view=false}).
+ * <p>No N+1: readings and senses are lazy and load in batches of up to {@link #BATCH_SIZE}
+ * entries ({@link BatchSize}), which covers the largest page in one query each. The
+ * {@link Sense} collections use subselect fetching. A page of up to 100 entries costs 6
+ * queries: entries, readings, senses, glosses, POS, misc. Nothing is join-fetched, because two
+ * {@code List}s in one join fetch fail in Hibernate (MultipleBagFetchException) and multiply
+ * the rows. Read them inside a transaction ({@code open-in-view=false}).
+ *
+ * <p>{@code common} is nullable in the schema. It is mapped as {@code Boolean}, and null reads as
+ * false, so one bad row cannot fail a whole page.
  */
 @Entity
 @Immutable
@@ -36,14 +39,14 @@ import org.hibernate.annotations.Immutable;
 public class VocabEntry {
 
 	/** Covers the largest page (size max 100, D28) in one batch. */
-	public static final int BATCH_SIZE = 100;
+	private static final int BATCH_SIZE = 100;
 
 	@Id
 	@Column(name = "ent_seq")
 	private Long entSeq;
 
 	@Column(name = "common")
-	private boolean common;
+	private Boolean common;
 
 	@Immutable
 	@OneToMany
@@ -67,8 +70,9 @@ public class VocabEntry {
 		return entSeq;
 	}
 
+	/** False when the column is null. */
 	public boolean isCommon() {
-		return common;
+		return Boolean.TRUE.equals(common);
 	}
 
 	/** Kanji writings and kana readings together; split them with {@link Reading#isKanji()}. */

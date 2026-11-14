@@ -39,7 +39,7 @@ import baddee.japanese_dictionary_services.SecurityConfig;
 import baddee.japanese_dictionary_services.vocabulary.VocabEntryDetail;
 import baddee.japanese_dictionary_services.vocabulary.VocabSense;
 import baddee.japanese_dictionary_services.vocabulary.VocabularyApi;
-import baddee.japanese_dictionary_services.vocabulary.integration.VocabPageTooDeepException;
+import baddee.japanese_dictionary_services.vocabulary.VocabPageTooDeepException;
 import baddee.japanese_dictionary_services.vocabulary.integration.VocabularySecurityConfig;
 
 /**

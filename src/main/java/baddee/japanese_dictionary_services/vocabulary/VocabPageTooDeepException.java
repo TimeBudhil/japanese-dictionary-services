@@ -1,4 +1,4 @@
-package baddee.japanese_dictionary_services.vocabulary.integration;
+package baddee.japanese_dictionary_services.vocabulary;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
