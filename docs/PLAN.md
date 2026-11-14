@@ -199,6 +199,24 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D36 | _(2026-11-13)_ Vocab candidates: **one ES `bool` query with named clauses** (`exact` term, constant score 1000; `prefix`, constant score 100; `partial` gloss `match`, operator AND). The tier comes from `matched_queries` (always correct). The order is by `_score`, then `common`; the boosts keep tiers in order in practice, not by guarantee. Tiers here: `EXACT`, `PREFIX`, `PARTIAL`. `search` adds `DEINFLECTED`. English has no exact tier until X2 adds a keyword subfield on `glosses` | One request per page with correct paging; `search` re-ranks by tier anyway (D17) |
 | D37 | _(2026-11-13)_ **Module API = facade in the base package.** Each module puts one public `<Module>Api` interface, plus the types it takes and returns, directly in its base package. Sub-packages (`services/`, `models/`, `repository/`, `integration/`, `controller/`, `dto/`) stay internal under Modulith's default rule. Other modules depend only on the interface. Considered: `@NamedInterface` on `services/` + `dto/` (keeps every class in a sub-folder), and an OPEN module (rejected: exposes repositories/entities) | User's call. A small, explicit API per module, with no Modulith annotations needed; template for all modules |
 
+Phase 1 smaller choices _(2026-11-13)_. Made by Claude while implementing, unless noted. **Provisional** = not yet confirmed by the user; see the matching open decision.
+
+| # | Decision | Reason / impact |
+|---|---|---|
+| D38 | Child entities are **one-way**: `@OneToMany @JoinColumn(name="ent_seq")` on `VocabEntry`, with no back-reference on `Reading`/`Sense` | Simpler read model; same DB columns as the updater, so `validate` is unaffected |
+| D39 | Readings and senses are ordered by **`@OrderBy("id")`** | Gives JMdict order **only because** the updater inserts rows in document order with identity ids. If the updater ever loads in parallel or out of order, this breaks; then readings/senses need order columns too (extend X8) |
+| D40 | Nullable schema booleans (`vocab_entry.common`, `reading.kanji`) map to **`Boolean`, null reads as false**; `VocabSense` **drops null** glosses/tags _(user's call, code review)_ | One bad row cannot fail a whole page with a 500 |
+| D41 | `VocabularyApi.findByEntSeq` returns **`Optional`**, not an exception; only the controller raises the 404 | `search` never handles HTTP errors for missing entries |
+| D42 | `searchEntries`: the **total comes from ES**; ids missing from Postgres are **skipped** | Pages can be short. On the last page `PageImpl` recomputes the total (known limitation, review #7, accepted) |
+| D43 | **Deep-page guard**: a page ending past 10,000 hits → 400 (`VocabPageTooDeepException`), checked before ES is called. The limit is **hard-coded** to ES's default `index.max_result_window` | No 500 from ES. Results past 10,000 cannot be paged. If the updater changes the index setting, update the constant |
+| D44 | `q` is limited to **100 characters** (`@Size`) → 400 if longer. **Provisional (O5)** | Not in the original plan. Bounds ES term/prefix work; dictionary queries are short |
+| D45 | Every module's security chain uses **`@Order(100)`** | Safe because module paths (`/api/v1/<module>/**`) never overlap. A module with an overlapping path would need its own order |
+| D46 | **CORS per chain, not a bean**: `GET/HEAD/OPTIONS`, request header and exposed header `X-Request-Id`, no credentials, preflight max age 1 h. The header name is a constant in each module, not imported from `RequestIdFilter` (D30) | A `corsConfigurationSource` bean would apply to every chain. Each module repeats the setup (accepted, D25) |
+| D47 | Logging aspect wraps **`VocabularyApi` methods only** (not internal beans), logs **no arguments**, and does **not** add the request id itself (the log pattern prints it). **Provisional (O6)**: differs from D30's wording ("read via `MDC.get`") | One log line per API call. Queries are user input and are not logged. Success lines are DEBUG, so hidden by default |
+| D48 | AspectJ is **not declared in the pom**; it comes in through `spring-boot-starter-data-jpa`. **Provisional (O7)** | If that dependency changes, the aspects stop running silently |
+| D49 | Controller tests **import the real security chains** (`SecurityConfig` + the module's config) instead of mocking security | The tests also cover security and CORS; a change there can break controller tests (intended) |
+| D50 | `logging.pattern.correlation` ends with **` `**, not a plain space _(bug fix)_ | Editors stripped the trailing space, so log lines had no space after the request id. The escape survives |
+
 ## Open decisions
 
 Each has Claude's current advice. Settle each one at the phase shown.
@@ -209,6 +227,9 @@ Each has Claude's current advice. Settle each one at the phase shown.
 | O2 (Q25) | Normalization: in-house vs library | **In-house, table-driven, unit-tested.** The mappings are small and Java libraries are thin. Alternative: ICU4J transliterators (large dependency, harder to tune) | Phase 5 |
 | O3 (Q21) | Word-level JLPT data source | No official list exists. Community lists (e.g. Tanos / Jonathan Waller) are the usual choice; this needs an updater spoke (X6) | Phase 8 |
 | O4 (Q26) | Deployment: AWS hosting, Elasticsearch vs Amazon OpenSearch (supports kuromoji/ICU), Dockerfile, CI/CD, tracing backend | Defer. Decide together with the updater repo | Before first deploy |
+| O5 | Keep the 100-character `q` limit (D44)? | **Keep.** Applies to every module's search param; change the number if real queries need more | Before Phase 2 |
+| O6 | Logging aspect request id (D47): rely on the log pattern, or add it explicitly with `MDC.get` as D30 says? | **Rely on the pattern** (no duplicate id per line); reword D30 to match | Before Phase 2 (the aspect is the template) |
+| O7 | Declare `spring-boot-starter-aspectj` in the pom (D48)? | **Yes.** One line; makes the aspects' dependency explicit | Before Phase 2 |
 
 ## Later (not scheduled)
 

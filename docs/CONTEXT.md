@@ -130,17 +130,28 @@ There is **no `shared` module** (D25). App-level pieces that act before any modu
 | `UnexpectedErrorHandler` | Last-resort 500 as RFC 9457 `ProblemDetail`, no internals leaked |
 
 Package conventions:
-- `models/`: read-only `@Immutable` JPA entities.
+- `models/`: read-only `@Immutable` JPA entities. Children are one-way (`@OneToMany @JoinColumn`
+  on the parent, D38). Nullable schema booleans map to `Boolean`, null reads as false (D40).
 - `repository/`: Spring Data JPA, read methods only.
 - `integration/`: ES documents/clients, adapters to other modules, and module plumbing. This includes
   the module's own `SecurityFilterChain` (`securityMatcher("/api/v1/<module>/**")`, `permitAll`,
-  stateless) and its CORS, read from the one key `app.cors.allowed-origins` (D25).
-- `aop/`: the module's own logging aspects (e.g. service call + timing). Read the request id with
-  `MDC.get("requestId")`; never import root classes (D30).
+  stateless, `@Order(100)` in every module, D45) and its CORS, read from the one key
+  `app.cors.allowed-origins` (D25). CORS is built per chain, not as a bean (D46). Template:
+  `vocabulary/integration/VocabularySecurityConfig`.
+- `aop/`: the module's own logging aspects (e.g. service call + timing), wrapping the module's
+  `<Module>Api` methods, no arguments logged. The request id is printed by
+  `logging.pattern.correlation`; if an aspect needs it in code, read `MDC.get("requestId")`. Never
+  import root classes (D30, D47, provisional O6).
 - Errors: each module owns its exceptions, extending Spring's `ErrorResponseException`
-  (status + detail). `spring.mvc.problemdetails.enabled=true` renders them (D29).
+  (status + detail). `spring.mvc.problemdetails.enabled=true` renders them (D29). An exception the
+  `<Module>Api` throws lives in the base package (D37); controller-only ones stay in `controller/`.
+  Lookups by id return `Optional` from the API; only the controller turns empty into 404 (D41).
 - Pagination: controllers take `page` (`@Min(0)`, default 0) and `size` (`@Min(1) @Max(100)`,
-  default 20; over 100 → 400) and return `Page<Dto>`, serialized `via-dto` (D28).
+  default 20; over 100 → 400) and return `Page<Dto>`, serialized `via-dto` (D28). ES-backed
+  searches reject pages past 10,000 hits with a 400 (D43). Query params are `@NotBlank`,
+  max 100 chars (D44, provisional O5).
+- Controller tests: `@WebMvcTest` + `@MockitoBean <Module>Api`, importing the real root and module
+  security configs (D49). Template: `vocabulary/controller/VocabularyControllerTests`.
 - No module queries another module's tables. It calls that module's service instead.
 - Module API (D37): one public `<Module>Api` interface plus the types it takes and returns sit in the
   module's **base package** (e.g. `vocabulary/VocabularyApi.java`, `vocabulary/VocabCandidate.java`).
