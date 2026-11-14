@@ -74,7 +74,7 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 - [x] `controller/`: `GET /api/v1/vocabulary/{entSeq}` (404 if unknown), `GET /api/v1/vocabulary?q=&page=&size=` (`q` `@NotBlank`, max 100 chars; pagination per D28). Returns `VocabEntryDetail` / `Page<VocabEntryDetail>`; depends only on `VocabularyApi`. **Unreachable until the security chain below exists** (root chain denies `/api/**`).
 - [x] _(done: `integration/VocabularySecurityConfig`, `@Order(100)` shared by all modules since paths don't overlap; CORS source built per chain, not a bean; allowed + exposed header `X-Request-Id`, no credentials, max age 1h)_ `integration/`: the module's `SecurityFilterChain` (`securityMatcher("/api/v1/vocabulary/**")`, `permitAll`, stateless, CSRF off, `@Order` before the root chain) and its CORS (`GET/HEAD/OPTIONS`, origins from `app.cors.allowed-origins`, expose `X-Request-Id`) (D25). This is the template for the other modules.
 - [x] Exceptions (D29): `controller/VocabEntryNotFoundException` (404), `integration/VocabPageTooDeepException` (400). Both extend `ErrorResponseException`.
-- [ ] `aop/`: logging aspect for the module's service calls (D30).
+- [x] `aop/`: logging aspect for the module's service calls (D30). `VocabularyLoggingAspect` wraps every `VocabularyApi` method: DEBUG with time, WARN over 500 ms, DEBUG on failure (type only, rethrown). No arguments logged. Request id comes from `logging.pattern.correlation`, not added by hand. AspectJ comes in through `spring-boot-starter-data-jpa`.
 - [ ] Controller unit tests (MockMvc + Mockito + Hamcrest) (D22).
 
 ## Phase 2 — kanji
