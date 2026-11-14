@@ -48,6 +48,9 @@ public class VocabSearchClient {
 	private static final float EXACT_BOOST = 1000f;
 	private static final float PREFIX_BOOST = 100f;
 
+	/** Elasticsearch's default {@code index.max_result_window}; the updater does not change it. */
+	static final int MAX_RESULT_WINDOW = 10_000;
+
 	private final ElasticsearchOperations operations;
 
 	public VocabSearchClient(ElasticsearchOperations operations) {
@@ -56,9 +59,13 @@ public class VocabSearchClient {
 
 	/**
 	 * Candidates for {@code query}, one page at a time. A blank query returns an empty page.
-	 * The caller keeps {@code from + size} within Elasticsearch's 10,000-hit window.
+	 *
+	 * @throws VocabPageTooDeepException if the page ends past the first 10,000 hits
 	 */
 	public Page<VocabCandidate> findCandidates(String query, Pageable pageable) {
+		if (pageable.getOffset() + pageable.getPageSize() > MAX_RESULT_WINDOW) {
+			throw new VocabPageTooDeepException(MAX_RESULT_WINDOW);
+		}
 		String text = query == null ? "" : query.strip();
 		if (text.isEmpty()) {
 			return Page.empty(pageable);
