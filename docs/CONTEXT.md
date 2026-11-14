@@ -3,7 +3,7 @@
 Stable facts about this service. Read this first. For tasks, implementation details,
 and the decision log, see [`PLAN.md`](./PLAN.md).
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-13_
 
 ## What the application is
 
@@ -168,7 +168,7 @@ This repo has its **own** `docker-compose.yml`: Postgres on **5433** and ES on *
 
 ```bash
 docker compose up -d      # postgres, elasticsearch, one-shot elasticsearch-init
-./mvnw test               # needs no infra (Modulith verify; contextLoads is @Disabled)
+./mvnw test               # needs no infra (Modulith verify + controller tests; contextLoads is @Disabled)
 ./mvnw spring-boot:run    # needs the stack
 ```
 

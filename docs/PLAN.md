@@ -2,7 +2,7 @@
 
 Tasks, implementation details, and decisions. Background facts are in [`CONTEXT.md`](./CONTEXT.md).
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-13_
 
 **How to use this file**
 - Work phases in order. Tick tasks with `[x]` when done.
@@ -15,7 +15,8 @@ _Last updated: 2026-11-02_
 - Phase 0 code is written and `./mvnw test` is green (Modulith `verify()`; `contextLoads` `@Disabled`).
   It was written on a machine **without Docker** (2026-11-02), so two Phase 0 boxes stay open:
   the **seed dataset** and **verify on a Docker machine** (see CONTEXT.md, "Pending verification").
-- **Next: Phase 1 (vocabulary).** It can start now. Do the two open Phase 0 boxes when a Docker machine is available.
+- Phase 1 (vocabulary) code is written _(2026-11-13)_ and `./mvnw test` is green (Modulith `verify()` + 21 controller tests). Still without Docker, so it has one open box: **verify on a Docker machine**.
+- **Next: Phase 2 (kanji).** Do the open Phase 0/1 Docker boxes when a Docker machine is available.
 
 ## Build order
 
@@ -75,7 +76,8 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 - [x] _(done: `integration/VocabularySecurityConfig`, `@Order(100)` shared by all modules since paths don't overlap; CORS source built per chain, not a bean; allowed + exposed header `X-Request-Id`, no credentials, max age 1h)_ `integration/`: the module's `SecurityFilterChain` (`securityMatcher("/api/v1/vocabulary/**")`, `permitAll`, stateless, CSRF off, `@Order` before the root chain) and its CORS (`GET/HEAD/OPTIONS`, origins from `app.cors.allowed-origins`, expose `X-Request-Id`) (D25). This is the template for the other modules.
 - [x] Exceptions (D29): `controller/VocabEntryNotFoundException` (404), `integration/VocabPageTooDeepException` (400). Both extend `ErrorResponseException`.
 - [x] `aop/`: logging aspect for the module's service calls (D30). `VocabularyLoggingAspect` wraps every `VocabularyApi` method: DEBUG with time, WARN over 500 ms, DEBUG on failure (type only, rethrown). No arguments logged. Request id comes from `logging.pattern.correlation`, not added by hand. AspectJ comes in through `spring-boot-starter-data-jpa`.
-- [ ] Controller unit tests (MockMvc + Mockito + Hamcrest) (D22).
+- [x] Controller unit tests (MockMvc + Mockito + Hamcrest) (D22). `VocabularyControllerTests`: `@WebMvcTest` + `@MockitoBean VocabularyApi`, with the **real** root + module security chains imported. 21 tests: JSON shape, 404/400/500 ProblemDetails, validation (`q`, `page`, `size`), `via-dto` page metadata, root chain denies other `/api` paths, CORS preflight allow/deny, `X-Request-Id` echo + exposed. Template for the other modules.
+- [ ] **Verify on a Docker machine** (with the Phase 0 checks): `validate` passes for the vocab entities (expects X8's order columns, D35), the query JSON works against the real `vocab` index, and `searchEntries` costs a fixed 6 SQL queries per page (`spring.jpa.show-sql`).
 
 ## Phase 2 — kanji
 
