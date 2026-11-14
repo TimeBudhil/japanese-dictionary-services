@@ -16,7 +16,7 @@ _Last updated: 2026-11-13_
   It was written on a machine **without Docker** (2026-11-02), so two Phase 0 boxes stay open:
   the **seed dataset** and **verify on a Docker machine** (see CONTEXT.md, "Pending verification").
 - Phase 1 (vocabulary) code is written _(2026-11-13)_ and `./mvnw test` is green (Modulith `verify()` + 21 controller tests). Still without Docker, so it has one open box: **verify on a Docker machine**.
-- **Next: Phase 2 (kanji).** Do the open Phase 0/1 Docker boxes when a Docker machine is available.
+- **Next: Phase 2 (kanji).** Do the open Phase 0/1 Docker boxes when a Docker machine is available. Open decisions O5–O9 (Phase 1 template choices) are deferred by the user _(2026-11-13)_; the current behaviour stays until they are decided.
 
 ## Build order
 
@@ -49,7 +49,7 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
   2. [x] `02-readonly-role.sh`: read-only role (`GRANT SELECT` on all tables, plus default privileges). Large objects need per-object grants (X7).
   3. [ ] `03-seed.sql`: seed data. Deferred to a Docker machine (D32). Must `GRANT SELECT ON LARGE OBJECT` for each sentence LO it creates.
 - [x] ES: index mappings in `docker/elasticsearch/mappings/` (generated from the updater's documents, D31; add kuromoji/ICU fields once X2 lands, which needs a custom ES image with the plugins), loaded by `docker/elasticsearch/init.sh`. It also bulk-loads `docker/elasticsearch/seed/<index>.ndjson` if present.
-- [ ] Seed dataset (Postgres SQL + ES ndjson) covering edge cases: multi-reading word, kana-only word, conjugatable verb (る/う verbs), `common` vs non-common, slang misc tag, kanji with radicals and stroke paths, kana-only name, sentence whose `index_words` hit seeded vocab. **Deferred to a Docker machine (D32).**
+- [ ] Seed dataset (Postgres SQL + ES ndjson) covering edge cases: multi-reading word, kana-only word, conjugatable verb (る/う verbs), `common` vs non-common, slang misc tag, kanji with radicals and stroke paths, kana-only name, sentence whose `index_words` hit seeded vocab. **Deferred to a Docker machine (D32).** Do not copy ids from `VocabularyControllerTests` (`1358280` 食べる, `1415370` たばこ): they were written from memory and are unchecked against JMdict; take real ids from the loaded data.
 - [x] Document the "full load" steps (CONTEXT.md, "Running locally").
 - [ ] **Verify on a Docker machine**: the 4 checks in CONTEXT.md, "Pending verification" (schema vs real `pg_dump`, ES mappings, app boots with `validate`, read-only role). Then remove that section.
 
@@ -216,6 +216,12 @@ Phase 1 smaller choices _(2026-11-13)_. Made by Claude while implementing, unles
 | D48 | AspectJ is **not declared in the pom**; it comes in through `spring-boot-starter-data-jpa`. **Provisional (O7)** | If that dependency changes, the aspects stop running silently |
 | D49 | Controller tests **import the real security chains** (`SecurityConfig` + the module's config) instead of mocking security | The tests also cover security and CORS; a change there can break controller tests (intended) |
 | D50 | `logging.pattern.correlation` ends with **` `**, not a plain space _(bug fix)_ | Editors stripped the trailing space, so log lines had no space after the request id. The escape survives |
+| D51 | Vocab search uses **`trackTotalHits(true)`** | `totalElements` is exact, also above 10,000. Cost: ES counts every match on every request; fine for `vocab`'s size, heavier for broad queries (`q=あ`). Revisit if search latency matters |
+| D52 | `VocabCandidate` carries **`entSeq`, `tier`, `common`** | `search` can rank by tier and `common` (D17) without loading entries from Postgres. Ranking on any other field needs a new candidate field or a DB load |
+| D53 | The exact and prefix clauses run for **every input**, including English and romaji | Simple; harmless (no Latin text in `kanji`/`readings`) but extra work. Once `parsing` (Phase 6) detects the input type, `search` can skip clauses that cannot match |
+| D54 | `findAllByEntSeq` **drops duplicate ids**, keeping the first position | `search` gets each entry once even if several clauses return the same id |
+| D55 | `VocabEntry.BATCH_SIZE = 100` **equals the max page size** (D28) | One query each for readings and senses per page. If the max `size` ever goes above 100, raise `BATCH_SIZE` too, or pages take 2+ queries |
+| D56 | The logging aspect's slow-call threshold is **500 ms, hard-coded** (`SLOW_MS`) | Changing it means a code change, not config. Make it a property if it needs tuning per environment |
 
 ## Open decisions
 
@@ -230,6 +236,8 @@ Each has Claude's current advice. Settle each one at the phase shown.
 | O5 | Keep the 100-character `q` limit (D44)? | **Keep.** Applies to every module's search param; change the number if real queries need more | Before Phase 2 |
 | O6 | Logging aspect request id (D47): rely on the log pattern, or add it explicitly with `MDC.get` as D30 says? | **Rely on the pattern** (no duplicate id per line); reword D30 to match | Before Phase 2 (the aspect is the template) |
 | O7 | Declare `spring-boot-starter-aspectj` in the pom (D48)? | **Yes.** One line; makes the aspects' dependency explicit | Before Phase 2 |
+| O8 | HTTP response shape: controllers return the module API records (`VocabEntryDetail`, `VocabSense`) directly, so their field names (`kanji`, `readings`, `partsOfSpeech`, `miscTags`, …) **are** the public JSON contract. Keep, or add a `dto/` layer? | **Keep for now.** Add `dto/` only when the HTTP shape must differ from the API shape. Impact: renaming a record field changes the JSON | Before Phase 2 (template) |
+| O9 | Module security chains `permitAll` **every method**, so `POST`/`PUT`/`DELETE` get a 405 (not 403). Restrict to `GET`/`HEAD`? | **Keep `permitAll`.** 405 is the correct HTTP answer and no write handlers exist. Restricting is one line (`requestMatchers(GET, HEAD).permitAll()`, `anyRequest().denyAll()`) if a stricter net is wanted | Before Phase 2 (template) |
 
 ## Later (not scheduled)
 
