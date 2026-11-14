@@ -8,6 +8,11 @@
 --
 -- Note: example_sentence text columns are `oid` (large objects) because the
 -- updater maps them with @Lob. See cross-repo task X7.
+--
+-- Hand edit (ahead of the updater): sense_gloss / sense_pos / sense_misc have an
+-- order column (gloss_order / pos_order / misc_order), as an @OrderColumn list
+-- would generate. The updater adds these in X8; until then a real updater DB
+-- fails `validate` on them. Regenerate this file once X8 lands.
 
 create table example_sentence (
     id bigint not null,
@@ -71,18 +76,24 @@ create table sense (
 );
 
 create table sense_gloss (
+    gloss_order integer not null,
     sense_id bigint not null,
-    gloss varchar(255)
+    gloss varchar(255),
+    primary key (sense_id, gloss_order)
 );
 
 create table sense_misc (
+    misc_order integer not null,
     sense_id bigint not null,
-    misc varchar(255)
+    misc varchar(255),
+    primary key (sense_id, misc_order)
 );
 
 create table sense_pos (
+    pos_order integer not null,
     sense_id bigint not null,
-    pos varchar(255)
+    pos varchar(255),
+    primary key (sense_id, pos_order)
 );
 
 create table source_version (

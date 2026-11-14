@@ -65,8 +65,8 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 
 ## Phase 1 — vocabulary
 
-- [ ] `models/`: `VocabEntry`, `Reading`, `Sense` as `@Immutable` entities mapping the updater tables (D2). Collections are `sense_gloss`, `sense_pos`, `sense_misc`.
-- [ ] `repository/`: lookup by `ent_seq`. Fetch readings and senses without N+1 (entity graph or join fetch).
+- [x] `models/`: `VocabEntry`, `Reading`, `Sense` as `@Immutable` entities mapping the updater tables (D2). Collections are `sense_gloss`, `sense_pos`, `sense_misc`. Children are one-way `@OneToMany @JoinColumn(name="ent_seq")` with `@OrderBy("id")`; getters return unmodifiable lists. `Sense` lists have `@OrderColumn` (`gloss_order`/`pos_order`/`misc_order`), **assuming X8** (D35). Not yet checked by `validate` (needs Docker).
+- [x] `repository/`: `findByEntSeq`, `findByEntSeqIn` on `Repository<VocabEntry, Long>`. No N+1: lazy collections with `@BatchSize(100)`, so a page costs a fixed 6 queries. Not join fetch / entity graph: two `List`s in one fetch throw `MultipleBagFetchException` and multiply rows (D35).
 - [ ] `integration/`: read-only `VocabDocument` (index `vocab`) + an ES query client that returns **candidates** with a match tier (exact on `kanji`/`readings`, prefix, gloss full-text).
 - [ ] `services/`: public API used by `search`: `findByEntSeq`, `findCandidates(query, …)`.
 - [ ] `dto/`: entry detail (readings split kanji/kana, senses with glosses/pos/misc, common).
@@ -144,6 +144,7 @@ Tracked here so they're not forgotten. Do them in the updater repo.
 | X5 | (If needed) GIN / `pg_trgm` indexes on `name_entry` arrays via Flyway | Phase 3 |
 | X6 | (Later) word-level JLPT source ingestion, once O3 is decided | Phase 8 |
 | X7 | Map `example_sentence.japanese/english/index_words` to `text`, not `@Lob` (which makes Postgres `oid` large objects), e.g. `@JdbcTypeCode(SqlTypes.LONGVARCHAR)`. Do it as a Flyway migration (X1). Then update this repo's `01-schema.sql` and drop the per-LO grants. Reason: large objects need per-object `GRANT`s (no default privileges in Postgres 16), so the read-only role can't read full-load sentences | Phase 4 |
+| X8 | **Keep upstream order** for ordered lists. The updater loses it today: `Sense` glosses / POS / misc are `@ElementCollection` lists with no order column, so the order of the JMdict XML (most important gloss first) is not stored. Add `@OrderColumn` (e.g. `gloss_order`) to `sense_gloss`, `sense_pos`, `sense_misc` (and X3's `<field>`/`<dial>` tables) via Flyway (X1), then re-import. **This repo already expects these exact column names** (`gloss_order`, `pos_order`, `misc_order`, 0-based, PK `(sense_id, <x>_order)`); until X8 lands, `validate` fails against a real updater DB. Also check the other spokes for lists whose source order matters (e.g. `name_entry` arrays, kanji `meanings[]`). Readings and senses are fine: identity ids follow insert order. Then update this repo's `01-schema.sql` and add the matching `@OrderColumn` in `vocabulary/models/Sense` | Phase 1 (gloss display order) |
 
 ---
 
@@ -185,6 +186,8 @@ Decided 2026-10-28 in a grilling session unless noted. Format: decision, then re
 | D31 | _(2026-11-02)_ Schema DDL and ES mappings are **generated offline** from the updater's classes (Hibernate schema export; Spring Data ES `MappingBuilder`), not hand-written. Verify against a real DB later | No Docker on the dev machine; hand-written DDL had already missed the `oid` columns |
 | D32 | _(2026-11-02)_ **Seed dataset deferred** until a machine with Docker is available | Seed data should be checked against a running stack |
 | D33 | _(2026-11-02)_ **Security is not Cognito's job here.** Cognito authenticates users; this API has none (D1). Cognito belongs to the future user service, the updater's admin API, or an API Gateway in front (O4). Removing Spring Security entirely was considered and rejected; the per-module chains stay | Keep in-app hardening (deny-all net, security headers) |
+| D34 | _(2026-11-13)_ **Source order is data, not ranking.** The updater must keep upstream order (e.g. gloss order in a sense) (X8). The `search` module ranks *results* (D17); it does not rebuild order inside an entry | The order lives only in the source files, so once the updater drops it, no downstream code can restore it |
+| D35 | _(2026-11-13)_ **Code as if X8 is done**: `Sense` maps `gloss_order`/`pos_order`/`misc_order` now, and `01-schema.sql` is hand-edited to match (an exception to D31). Vocab collections load lazily with `@BatchSize`, not join fetch | User's call: assume the updater keeps gloss order. Batch fetch avoids N+1 without `MultipleBagFetchException` and keeps the setting inside the module |
 
 ## Open decisions
 

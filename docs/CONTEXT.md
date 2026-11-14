@@ -60,7 +60,7 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 | `vocab_entry` | `ent_seq` PK, `common` bool | JMdict entry |
 | `reading` | `id` PK, `ent_seq` FK, `text`, `kanji` bool | `kanji=true` → kanji writing (keb), false → kana reading (reb) |
 | `sense` | `id` PK, `ent_seq` FK | one meaning of an entry |
-| `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc` | element collections. JMdict `<field>` and `<dial>` tags are **not stored** |
+| `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc`, `gloss_order` / `pos_order` / `misc_order` | element collections, ordered as in JMdict. The order columns are **assumed** (X8, D35): the updater doesn't create them yet. JMdict `<field>` and `<dial>` tags are **not stored** |
 | `example_sentence` | `id` PK, `japanese`, `english`, `index_words`, `source` | `index_words` = space-separated headwords (loose link to vocab, no FK). `japanese`/`english`/`index_words` are **`oid` large objects** (updater maps them `@Lob`), see X7 |
 | `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `varchar(255) array` |
 | `radical` | `character` PK, `stroke_count` | RADKFILE radicals |
