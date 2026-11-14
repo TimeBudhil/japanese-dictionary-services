@@ -5,6 +5,7 @@ import java.util.Set;
 
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.mapping.FieldType;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
@@ -33,7 +34,7 @@ import baddee.japanese_dictionary_services.vocabulary.VocabPageTooDeepException;
  * <li>{@code partial}: {@code match} on {@code glosses} (all words), normal BM25 score.</li>
  * </ul>
  * The tier comes from the hit's matched query names (best one wins), so it is always right.
- * The <b>order</b> is by score, then {@code common}: the large constant scores keep exact
+ * The <b>order</b> is by score, then {@code common}, then {@code id} (unique, for stable paging): the large constant scores keep exact
  * before prefix before gloss hits in practice, but a very high gloss score could in theory pass
  * a prefix hit. The {@code search} module re-ranks by tier anyway (D17).
  *
@@ -79,11 +80,13 @@ public class VocabSearchClient {
 
 		NativeQuery request = NativeQuery.builder()
 				.withQuery(candidateQuery(text))
-				// TODO(Docker check): add a unique last sort key (e.g. the dynamic `id` field) so
-				// equal-score hits keep a stable order across pages. See PLAN.md Phase 1.
+				// Unique last key: equal-score hits (all exact, all prefix) keep one order across
+				// pages, so none repeat or go missing. unmappedType: no error on an empty index.
 				.withSort(
 						SortOptions.of(s -> s.score(sc -> sc.order(SortOrder.Desc))),
-						SortOptions.of(s -> s.field(f -> f.field(VocabDocument.COMMON).order(SortOrder.Desc))))
+						SortOptions.of(s -> s.field(f -> f.field(VocabDocument.COMMON).order(SortOrder.Desc))),
+						SortOptions.of(s -> s.field(f -> f.field(VocabDocument.ID_KEYWORD)
+								.order(SortOrder.Asc).unmappedType(FieldType.Keyword))))
 				.withPageable(page)
 				.withTrackTotalHits(true)
 				.build();

@@ -1,0 +1,22 @@
+{"index": {"_id": "1582710"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1582710", "kanji": ["日本"], "readings": ["にほん", "にっぽん"], "glosses": ["Japan"], "common": true}
+{"index": {"_id": "1464530"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1464530", "kanji": ["日本語"], "readings": ["にほんご", "にっぽんご"], "glosses": ["Japanese (language)"], "common": true}
+{"index": {"_id": "1000430"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1000430", "kanji": [], "readings": ["あの", "あのー", "あのう"], "glosses": ["say", "well", "um", "er"], "common": true}
+{"index": {"_id": "1000420"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1000420", "kanji": ["彼の"], "readings": ["あの", "あん"], "glosses": ["that", "those", "the"], "common": true}
+{"index": {"_id": "1358280"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1358280", "kanji": ["食べる", "喰べる"], "readings": ["たべる"], "glosses": ["to eat", "to live on (e.g. a salary)", "to live off", "to subsist on"], "common": true}
+{"index": {"_id": "1343950"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1343950", "kanji": ["書く"], "readings": ["かく"], "glosses": ["to write", "to compose", "to pen", "to draw", "to paint"], "common": true}
+{"index": {"_id": "1467640"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1467640", "kanji": ["猫"], "readings": ["ねこ", "ネコ"], "glosses": ["cat (esp. the domestic cat, Felis catus)", "feline", "shamisen", "geisha", "wheelbarrow", "clay bed-warmer", "bottom (submissive partner of a homosexual relationship)"], "common": true}
+{"index": {"_id": "2839132"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "2839132", "kanji": ["猫タワー"], "readings": ["ねこタワー", "ネコタワー"], "glosses": ["cat tree", "cat tower", "cat condo"], "common": false}
+{"index": {"_id": "1206730"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1206730", "kanji": ["学校", "學校"], "readings": ["がっこう"], "glosses": ["school"], "common": true}
+{"index": {"_id": "1012840"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "1012840", "kanji": [], "readings": ["やばい", "ヤバい", "ヤバイ"], "glosses": ["dangerous", "risky", "awful", "terrible", "crap", "terrific", "amazing", "cool", "crazy", "insane", "not normal", "unhinged", "extreme"], "common": true}
+{"index": {"_id": "2561870"}}
+{"_class": "badee.updaterComponent.spokes.jmdict.search.VocabDocument", "id": "2561870", "kanji": ["天一神", "中神"], "readings": ["てんいちじん", "なかがみ"], "glosses": ["Ten'ichijin", "Nakagami", "god of fortune in Onmyōdō who descends to the northeast on the 46th day of the sexagenary cycle and completes a clockwise circuit, spending five days on each cardinal point and six days on each ordinal point, returning to heaven from the north on the 30th day of the next sexagenary cycle; travelling in the direction of Ten'ichijin is considered unlucky"], "common": false}

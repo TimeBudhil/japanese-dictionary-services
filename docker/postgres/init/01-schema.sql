@@ -1,18 +1,21 @@
 -- Mirror of the updater's Postgres schema. The updater owns the schema (D3); this
 -- file only exists so `ddl-auto=validate` passes against this repo's own dev DB.
 --
--- Generated (not hand-written) from the updater's JPA entities with Hibernate
--- 7.4.5 + PostgreSQLDialect, i.e. exactly what the updater's `ddl-auto=update`
--- creates. Regenerate when the updater's entities change. Once the updater has
--- Flyway (X1), reuse its migrations instead.
+-- Generated from the updater's JPA entities with Hibernate 7.4 + PostgreSQLDialect,
+-- i.e. what the updater's `ddl-auto=update` creates. Verified 2026-11-14 against a
+-- `pg_dump --schema-only` of an updater booted on an empty Postgres 16: same tables,
+-- types, nullability, primary keys, check constraints and foreign keys (only column
+-- order and FK names may differ). Regenerate when the updater's entities change.
+-- Once the updater has Flyway (X1), reuse its migrations instead.
 --
 -- Note: example_sentence text columns are `oid` (large objects) because the
 -- updater maps them with @Lob. See cross-repo task X7.
 --
--- Hand edit (ahead of the updater): sense_gloss / sense_pos / sense_misc have an
--- order column (gloss_order / pos_order / misc_order), as an @OrderColumn list
--- would generate. The updater adds these in X8; until then a real updater DB
--- fails `validate` on them. Regenerate this file once X8 lands.
+-- sense_gloss / sense_pos / sense_misc have 0-based order columns (gloss_order /
+-- pos_order / misc_order) from the updater's @OrderColumn lists (X8, done
+-- 2026-11-14), so glosses and tags keep the JMdict order. `gloss` is `text`:
+-- some JMdict glosses are longer than 255 characters. Likewise kanji.stroke_paths
+-- is `text array` (SVG path data).
 
 create table example_sentence (
     id bigint not null,
@@ -36,7 +39,7 @@ create table kanji (
     nanori varchar(255) array,
     onyomi varchar(255) array,
     stroke_count integer,
-    stroke_paths varchar(255) array,
+    stroke_paths text array,
     primary key (character)
 );
 
@@ -76,21 +79,21 @@ create table sense (
 );
 
 create table sense_gloss (
-    gloss_order integer not null,
+    gloss_order integer not null check (gloss_order >= 0),
     sense_id bigint not null,
-    gloss varchar(255),
+    gloss text,
     primary key (sense_id, gloss_order)
 );
 
 create table sense_misc (
-    misc_order integer not null,
+    misc_order integer not null check (misc_order >= 0),
     sense_id bigint not null,
     misc varchar(255),
     primary key (sense_id, misc_order)
 );
 
 create table sense_pos (
-    pos_order integer not null,
+    pos_order integer not null check (pos_order >= 0),
     sense_id bigint not null,
     pos varchar(255),
     primary key (sense_id, pos_order)

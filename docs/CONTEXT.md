@@ -3,7 +3,7 @@
 Stable facts about this service. Read this first. For tasks, implementation details,
 and the decision log, see [`PLAN.md`](./PLAN.md).
 
-_Last updated: 2026-11-13_
+_Last updated: 2026-11-14_
 
 ## What the application is
 
@@ -60,9 +60,9 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 | `vocab_entry` | `ent_seq` PK, `common` bool | JMdict entry |
 | `reading` | `id` PK, `ent_seq` FK, `text`, `kanji` bool | `kanji=true` → kanji writing (keb), false → kana reading (reb) |
 | `sense` | `id` PK, `ent_seq` FK | one meaning of an entry |
-| `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc`, `gloss_order` / `pos_order` / `misc_order` | element collections, ordered as in JMdict. The order columns are **assumed** (X8, D35): the updater doesn't create them yet. JMdict `<field>` and `<dial>` tags are **not stored** |
+| `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc`, `gloss_order` / `pos_order` / `misc_order` | element collections, ordered as in JMdict (0-based order columns, X8). PK `(sense_id, <x>_order)`. `gloss` is `text` (some glosses are over 255 chars). POS/misc hold the expanded DTD text, not codes (X10). JMdict `<field>` and `<dial>` tags are **not stored** |
 | `example_sentence` | `id` PK, `japanese`, `english`, `index_words`, `source` | `index_words` = space-separated headwords (loose link to vocab, no FK). `japanese`/`english`/`index_words` are **`oid` large objects** (updater maps them `@Lob`), see X7 |
-| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `varchar(255) array` |
+| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `varchar(255) array`, except `stroke_paths` = `text array` (SVG paths up to ~380 chars) |
 | `radical` | `character` PK, `stroke_count` | RADKFILE radicals |
 | `kanji_radical` | `kanji` FK, `radical` FK | many-to-many |
 | `name_entry` | `ent_seq` PK, `kanji[]`, `readings[]`, `name_types[]`, `translations[]` | ~740k rows |
@@ -82,25 +82,12 @@ Source of truth for the schema is the updater's entity classes:
 `japanese-dictionary-updater-component/src/main/java/badee/updaterComponent/spokes/*/domain/` and `*/search/`.
 
 The exact DDL is in `docker/postgres/init/01-schema.sql` and the exact ES mappings are in
-`docker/elasticsearch/mappings/`. Both were **generated offline** from the updater's classes
-(Hibernate 7.4.5 `PostgreSQLDialect` schema export; Spring Data ES `MappingBuilder`), not
-hand-written. All plain strings are `varchar(255)`; booleans are nullable.
-
-### Pending verification (needs Docker)
-
-The schema and mappings above were generated **without a running database** (no Docker on
-the dev machine, 2026-11-02). Before relying on them, check them against a real database on
-a machine with Docker:
-1. Boot the updater against an empty Postgres, then compare
-   `pg_dump --schema-only` with `docker/postgres/init/01-schema.sql`.
-2. Run an updater load, then compare `GET /vocab/_mapping` and `GET /example-sentence/_mapping`
-   with `docker/elasticsearch/mappings/*.json` (expect an extra dynamic `id` field).
-3. `docker compose up -d`, then `./mvnw spring-boot:run`: `ddl-auto=validate` must pass,
-   `/actuator/health` must be UP, and `/swagger-ui.html` must load.
-4. Connect as `dictionary_reader`: `SELECT` works and `INSERT` fails.
-
-Remove this section when all four pass. The PLAN.md Phase 0 box "Verify on a Docker machine"
-tracks this.
+`docker/elasticsearch/mappings/`. Both are **generated** from the updater's classes
+(Hibernate 7.4 `PostgreSQLDialect` schema export; Spring Data ES `MappingBuilder`), not
+hand-written, and were **verified against a real updater DB and index** on 2026-11-14 (PLAN.md,
+Phase 0). Plain strings are `varchar(255)` unless noted above; booleans are nullable.
+`vocab.json` also declares the `id` field that ES maps dynamically from the updater's documents
+(`text` + `id.keyword`, used as the last sort key, D58).
 
 ## Module layout (package-by-feature, Spring Modulith)
 
@@ -160,7 +147,7 @@ Package conventions:
 ## Tech stack
 
 - Java **25**, Spring Boot **4.1.2**, Maven wrapper (`./mvnw`).
-- Spring Web MVC, Data JPA (Postgres driver), Data Elasticsearch, Security, Validation, Actuator.
+- Spring Web MVC, Data JPA (Postgres driver), Data Elasticsearch (9.x client → needs an ES 9 server), Security, Validation, Actuator.
 - Spring Modulith **2.1.2** (built against Boot 4.1.2) and springdoc-openapi **3.2.0** (parent Boot 4.1.2).
   Spring Cloud Config was removed (D5).
 - API: REST + JSON under `/api/v1/...`, OpenAPI/Swagger UI (`/swagger-ui.html`), page/size pagination.
@@ -173,9 +160,9 @@ Package conventions:
 
 ## Running locally
 
-This repo has its **own** `docker-compose.yml`: Postgres on **5433** and ES on **9201**
-(so it can run beside the updater's stack on 5432/9200). Not yet run; see
-[Pending verification](#pending-verification-needs-docker).
+This repo has its **own** `docker-compose.yml`: Postgres 16 on **5433** and Elasticsearch **9.4.8** on **9201**
+(so it can run beside the updater's stack on 5432/9200). ES must be 9.x: Boot 4.1's ES client is 9.x
+and an 8.x server rejects it (D57).
 
 ```bash
 docker compose up -d      # postgres, elasticsearch, one-shot elasticsearch-init
@@ -190,10 +177,14 @@ What the stack sets up on first start (empty volumes):
 | Postgres DB `dictionary`, owner `dictionary_owner` | `docker-compose.yml` | Local dev credentials only |
 | Schema | `docker/postgres/init/01-schema.sql` | Mirrors the updater schema so `validate` passes |
 | Read-only role `dictionary_reader` | `docker/postgres/init/02-readonly-role.sh` | `SELECT` on all tables + default privileges for tables `dictionary_owner` creates later |
-| Seed data | `docker/postgres/init/03-seed.sql`, `docker/elasticsearch/seed/<index>.ndjson` | **Not written yet** (waits for a Docker machine) |
+| Seed data | `docker/postgres/init/03-seed.sql`, `docker/elasticsearch/seed/<index>.ndjson` | 11 vocab entries, 8 kanji, 2 names, 2 sentences, picked for edge cases. **Generated** from a full load by `python docker/generate-seed.py` (D59); don't hand-edit |
 | ES indexes `vocab`, `example-sentence` | `docker/elasticsearch/init.sh` + `mappings/` | Creates missing indexes, bulk-loads any seed files. `number_of_replicas=0` so one node is green |
 
 Init scripts only run on an **empty** volume. To re-run them: `docker compose down -v`, then `up -d`.
+
+**Snapshots** (D71). After a full load, run `sh docker/snapshot.sh save` once. Later, `sh docker/snapshot.sh restore`
+brings the full load back in about a minute (it **deletes** the current volumes first). `list` shows the saved snapshots.
+A snapshot only works with the same images; take a new one after a schema change or an image upgrade.
 
 **Full load** (the whole dictionary instead of seed data). Start from empty volumes, then run
 the updater once against this stack **as the owner**, so the reader's default privileges apply:

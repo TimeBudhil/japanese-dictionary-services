@@ -1,2 +1,7 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+
+# Files read inside Linux containers must keep LF, even on a Windows checkout
+# (a CRLF shebang or "set -eu\r" breaks the init scripts).
+*.sh text eol=lf
+docker/** text eol=lf

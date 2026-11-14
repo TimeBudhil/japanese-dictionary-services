@@ -1,0 +1,4 @@
+{"index": {"_id": "243798"}}
+{"_class": "badee.updaterComponent.spokes.tatoeba.search.ExampleSentenceDocument", "id": "243798", "japanese": "最近の猫はネズミを食べない。", "english": "Modern cats don't eat rats.", "indexWords": "最近{最近の} 猫(ねこ)[01] は 鼠[01]{ネズミ} を 食べる{食べない}"}
+{"index": {"_id": "44561"}}
+{"_class": "badee.updaterComponent.spokes.tatoeba.search.ExampleSentenceDocument", "id": "44561", "japanese": "その猫は魚を食べようと魚の入った缶をひっくり返した。", "english": "The cat upset the can of fish in order to eat the contents.", "indexWords": "其の[01]{その} 猫(ねこ)[01] は 魚 を 食べる{食べよう} と 魚 の 入る(はいる){入った} 缶(かん) を ひっくり返す{ひっくり返した}"}

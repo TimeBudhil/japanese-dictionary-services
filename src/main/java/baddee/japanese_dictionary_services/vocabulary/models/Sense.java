@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
+import org.hibernate.Length;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Immutable;
@@ -46,7 +47,7 @@ public class Sense {
 	@ElementCollection
 	@CollectionTable(name = "sense_gloss", joinColumns = @JoinColumn(name = "sense_id"))
 	@OrderColumn(name = "gloss_order")
-	@Column(name = "gloss")
+	@Column(name = "gloss", length = Length.LONG32) // `text` in the updater schema
 	@Fetch(FetchMode.SUBSELECT)
 	private List<String> glosses = new ArrayList<>();
 

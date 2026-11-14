@@ -26,6 +26,13 @@ public class VocabDocument {
 	static final String READINGS = "readings";
 	static final String GLOSSES = "glosses";
 	static final String COMMON = "common";
+	/**
+	 * Keyword sub-field of the {@code id} (= ent_seq) source field. The updater's
+	 * mapping has no {@code id} field, so ES maps it dynamically as {@code text} +
+	 * {@code keyword}; this repo's dev mapping declares the same. Unique, so it is the
+	 * last sort key for stable paging ({@code _id} cannot be sorted on in ES 8+).
+	 */
+	static final String ID_KEYWORD = "id.keyword";
 
 	/** The JMdict ent_seq, as a string. */
 	@Id

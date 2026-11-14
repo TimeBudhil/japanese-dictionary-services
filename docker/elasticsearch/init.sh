@@ -1,6 +1,7 @@
 #!/bin/sh
 # One-shot ES init: create each index from mappings/<index>.json if it does not
-# exist yet, then bulk-load seed/<index>.ndjson if that file exists.
+# exist yet. Only for an index it has just created, bulk-load seed/<index>.ndjson if
+# that file exists. An existing index (a full load, a restored snapshot) is left as is.
 # Mappings mirror the updater's Spring Data documents (VocabDocument,
 # ExampleSentenceDocument), except number_of_replicas=0 so a single node is green.
 set -eu
@@ -12,12 +13,13 @@ for mapping in /es-init/mappings/*.json; do
 
   status="$(curl -s -o /dev/null -w '%{http_code}' "$ES_URL/$index")"
   if [ "$status" = "200" ]; then
-    echo "index $index exists, skipping create"
-  else
-    echo "creating index $index"
-    curl -sf -X PUT "$ES_URL/$index" -H 'Content-Type: application/json' --data-binary "@$mapping"
-    echo
+    echo "index $index exists, skipping create and seed"
+    continue
   fi
+
+  echo "creating index $index"
+  curl -sf -X PUT "$ES_URL/$index" -H 'Content-Type: application/json' --data-binary "@$mapping"
+  echo
 
   seed="/es-init/seed/$index.ndjson"
   if [ -f "$seed" ]; then

@@ -9,6 +9,7 @@
   "mappings": {
     "properties": {
       "_class": { "type": "keyword", "index": false, "doc_values": false },
+      "id": { "type": "text", "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } } },
       "kanji": { "type": "keyword" },
       "readings": { "type": "keyword" },
       "glosses": { "type": "text" },

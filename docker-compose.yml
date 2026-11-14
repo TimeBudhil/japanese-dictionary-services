@@ -22,7 +22,7 @@ services:
       retries: 10
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.4.8
     container_name: dictionary-elasticsearch
     environment:
       - discovery.type=single-node
