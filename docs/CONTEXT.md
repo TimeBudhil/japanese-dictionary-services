@@ -142,6 +142,9 @@ Package conventions:
 - Pagination: controllers take `page` (`@Min(0)`, default 0) and `size` (`@Min(1) @Max(100)`,
   default 20; over 100 → 400) and return `Page<Dto>`, serialized `via-dto` (D28).
 - No module queries another module's tables. It calls that module's service instead.
+- Module API (D37): one public `<Module>Api` interface plus the types it takes and returns sit in the
+  module's **base package** (e.g. `vocabulary/VocabularyApi.java`, `vocabulary/VocabCandidate.java`).
+  `services/` implements it. Every sub-package is internal (Modulith default); other modules use only the base package.
 
 ## Tech stack
 
