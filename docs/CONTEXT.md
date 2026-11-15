@@ -57,15 +57,15 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 
 | Table | Columns | Notes |
 |---|---|---|
-| `vocab_entry` | `ent_seq` PK, `common` bool | JMdict entry |
+| `vocab_entry` | `ent_seq` PK, `common` bool, `retired_at` | JMdict entry. `retired_at` set = the entry left upstream (updater ADR-0001): the row stays, the ES document is deleted. This service does not map it; the detail endpoint returns retired entries like active ones (D76) |
 | `reading` | `id` PK, `ent_seq` FK, `text`, `kanji` bool | `kanji=true` → kanji writing (keb), false → kana reading (reb) |
 | `sense` | `id` PK, `ent_seq` FK | one meaning of an entry |
 | `sense_gloss` / `sense_pos` / `sense_misc` | `sense_id` FK, `gloss` / `pos` / `misc`, `gloss_order` / `pos_order` / `misc_order` | element collections, ordered as in JMdict (0-based order columns, X8). PK `(sense_id, <x>_order)`. `gloss` is `text` (some glosses are over 255 chars). POS/misc hold the expanded DTD text, not codes (X10). JMdict `<field>` and `<dial>` tags are **not stored** |
-| `example_sentence` | `id` PK, `japanese`, `english`, `index_words`, `source` | `index_words` = space-separated headwords (loose link to vocab, no FK). `japanese`/`english`/`index_words` are **`oid` large objects** (updater maps them `@Lob`), see X7 |
-| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]` | `[]` = Postgres `varchar(255) array`, except `stroke_paths` = `text array` (SVG paths up to ~380 chars) |
+| `example_sentence` | `id` PK (the **Japanese** Tatoeba sentence id, since the port; it was the English id before), `japanese`, `english`, `index_words`, `source`, `retired_at` | `index_words` = space-separated headwords (loose link to vocab, no FK). Text columns are plain `text` (X7, done in the updater) |
+| `kanji` | `character` PK, `codepoint`, `onyomi[]`, `kunyomi[]`, `nanori[]`, `meanings[]`, `stroke_count`, `grade`, `joyo`, `jlpt` (old 1–4), `frequency`, `classical_radical`, `stroke_paths[]`, `retired_at` | `[]` = Postgres `text[]` |
 | `radical` | `character` PK, `stroke_count` | RADKFILE radicals |
 | `kanji_radical` | `kanji` FK, `radical` FK | many-to-many |
-| `name_entry` | `ent_seq` PK, `kanji[]`, `readings[]`, `name_types[]`, `translations[]` | ~740k rows |
+| `name_entry` | `ent_seq` PK, `kanji[]`, `readings[]`, `name_types[]`, `translations[]`, `retired_at` | ~740k rows. `[]` = `text[]` |
 | `source_version` | `feed_id` PK, `content_hash`, timestamps | updater bookkeeping; ignore |
 
 ### Elasticsearch indexes (written by the updater)
@@ -78,14 +78,15 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 Japanese fields use the default analyzer today. kuromoji/ICU multi-fields are planned
 in the updater (see PLAN.md, decision D14).
 
-Source of truth for the schema is the updater's entity classes:
-`japanese-dictionary-updater-component/src/main/java/badee/updaterComponent/spokes/*/domain/` and `*/search/`.
+Source of truth for the schema is the updater's **Flyway migrations** (D3, X1):
+`japanese-dictionary-updater-component/src/main/resources/db/migration/V*.sql`. The ES documents are
+its `spokes/*/search/` classes. Short identifier columns are `varchar(255)`, free text and lists
+are `text` / `text[]`, booleans are nullable. Foreign keys are indexed (V3).
 
-The exact DDL is in `docker/postgres/init/01-schema.sql` and the exact ES mappings are in
-`docker/elasticsearch/mappings/`. Both are **generated** from the updater's classes
-(Hibernate 7.4 `PostgreSQLDialect` schema export; Spring Data ES `MappingBuilder`), not
-hand-written, and were **verified against a real updater DB and index** on 2026-11-14 (PLAN.md,
-Phase 0). Plain strings are `varchar(255)` unless noted above; booleans are nullable.
+The DDL for the seed mode is `docker/postgres/seed/schema.sql`: the migrations concatenated by
+`sh docker/generate-schema.sh` (D74), never hand-edited. The ES mappings in
+`docker/elasticsearch/mappings/` are generated from the updater's documents (Spring Data ES
+`MappingBuilder`) and were verified against a real index on 2026-11-14.
 `vocab.json` also declares the `id` field that ES maps dynamically from the updater's documents
 (`text` + `id.keyword`, used as the last sort key, D58).
 
@@ -165,20 +166,25 @@ This repo has its **own** `docker-compose.yml`: Postgres 16 on **5433** and Elas
 and an 8.x server rejects it (D57).
 
 ```bash
-docker compose up -d      # postgres, elasticsearch, one-shot elasticsearch-init
+docker compose up -d      # seed mode: postgres, elasticsearch, one-shot elasticsearch-init
 ./mvnw test               # needs no infra (Modulith verify + controller tests; contextLoads is @Disabled)
 ./mvnw spring-boot:run    # needs the stack
 ```
 
-What the stack sets up on first start (empty volumes):
+The stack has two modes, picked on first start of empty volumes (D74):
+- **Seed mode** (default): schema + seed data, ready in seconds.
+- **Empty mode** (`DICTIONARY_SEED=false`): no tables and no seed, for a full load. The updater's
+  Flyway builds the schema. Flyway cannot adopt the seed mode's tables (they have no Flyway history).
+
+What the stack sets up on first start:
 
 | Piece | File | Does |
 |---|---|---|
 | Postgres DB `dictionary`, owner `dictionary_owner` | `docker-compose.yml` | Local dev credentials only |
-| Schema | `docker/postgres/init/01-schema.sql` | Mirrors the updater schema so `validate` passes |
+| Schema (seed mode) | `docker/postgres/init/01-seed-data.sh` runs `docker/postgres/seed/schema.sql` | The updater's Flyway migrations, so `validate` passes. Regenerate with `sh docker/generate-schema.sh` |
 | Read-only role `dictionary_reader` | `docker/postgres/init/02-readonly-role.sh` | `SELECT` on all tables + default privileges for tables `dictionary_owner` creates later |
-| Seed data | `docker/postgres/init/03-seed.sql`, `docker/elasticsearch/seed/<index>.ndjson` | 11 vocab entries, 8 kanji, 2 names, 2 sentences, picked for edge cases. **Generated** from a full load by `python docker/generate-seed.py` (D59); don't hand-edit |
-| ES indexes `vocab`, `example-sentence` | `docker/elasticsearch/init.sh` + `mappings/` | Creates missing indexes, bulk-loads any seed files. `number_of_replicas=0` so one node is green |
+| Seed data (seed mode) | `docker/postgres/seed/seed.sql`, `docker/elasticsearch/seed/<index>.ndjson` | 11 vocab entries, 8 kanji, 2 names, 2 sentences, picked for edge cases. **Generated** from a full load by `python docker/generate-seed.py` (D59); don't hand-edit |
+| ES indexes `vocab`, `example-sentence` | `docker/elasticsearch/init.sh` + `mappings/` | Creates missing indexes (both modes); bulk-loads the seed files into new indexes in seed mode only (D72). `number_of_replicas=0` so one node is green |
 
 Init scripts only run on an **empty** volume. To re-run them: `docker compose down -v`, then `up -d`.
 
@@ -186,21 +192,23 @@ Init scripts only run on an **empty** volume. To re-run them: `docker compose do
 brings the full load back in about a minute (it **deletes** the current volumes first). `list` shows the saved snapshots.
 A snapshot only works with the same images; take a new one after a schema change or an image upgrade.
 
-**Full load** (the whole dictionary instead of seed data). Start from empty volumes, then run
-the updater once against this stack **as the owner**, so the reader's default privileges apply:
+**Full load** (the whole dictionary instead of seed data, about 16 min: JMdict 9, JMnedict 5, Tatoeba 1.5, Kanji <1). Start in empty mode, run
+the updater (profile `local`) against this stack **as the owner**, so the reader's default
+privileges cover the tables Flyway creates, then trigger every feed:
 
 ```bash
+docker compose down -v && DICTIONARY_SEED=false docker compose up -d
+
 # in ~/repos/japanese-dictionary-updater-component
-./mvnw spring-boot:run \
-  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:postgresql://localhost:5433/dictionary \
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local --server.port=8091 \
+  --spring.datasource.url=jdbc:postgresql://localhost:5433/dictionary \
   --spring.datasource.username=dictionary_owner --spring.datasource.password=dictionary_owner \
   --spring.elasticsearch.uris=http://localhost:9201"
+curl -X POST -H "Authorization: Bearer dev-token" localhost:8091/admin/updates   # all feeds
 ```
 
-Known gap: sentence text written by the updater is in large objects, and Postgres 16 has no
-default privileges for those. Until X7, `dictionary_reader` cannot read full-load sentence text.
-A workaround for local use only: as owner, run
-`DO $$ DECLARE o oid; BEGIN FOR o IN SELECT oid FROM pg_largeobject_metadata LOOP EXECUTE format('GRANT SELECT ON LARGE OBJECT %s TO dictionary_reader', o); END LOOP; END $$;`
+Then save it: `sh docker/snapshot.sh save` (D71). To load one spoke only: `POST /admin/updates/{id}`
+(`jmdict`, `jmnedict`, `kanji`, `tatoeba`).
 
 ## Glossary
 
@@ -220,4 +228,5 @@ A workaround for local use only: as owner, run
 - `written_reports/Architectures/Container_Diagram_V0{1,2,3}.JPG`: hand-drawn container diagrams (V03 is current).
 - `written_reports/Archived/`: early data model (`japanese_app_data_model.puml`), use cases, story map, pipeline sketch. Includes ideas not yet sourced (pitch accent, frequency, grammar points).
 - `~/repos/baddeeApp/claude-logs/2026-09-19.md`: updater build log and decisions.
-- Updater `NEXT_STEPS.md` is **stale**: Kanji and JMnedict spokes are implemented (parsers + tests exist).
+- Updater docs: `NEXT_STEPS.md` (status, decisions U1–U9), `CONTEXT.md` (its glossary: feed, spoke, entry, retired entry), `docs/adr/`, `docs/configuration.md` (profiles).
+- `~/repos/baddeeApp/updaterComponent` is the **old** copy of the updater; its newest work was ported (D73). Don't change it.

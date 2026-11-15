@@ -58,16 +58,21 @@ class VocabularyControllerTests {
 	private static final String BASE = "/api/v1/vocabulary";
 	private static final String ALLOWED_ORIGIN = "http://localhost:5173"; // from application.properties
 
-	/** 食べる: one kanji writing, one kana reading, two senses. */
-	private static final VocabEntryDetail TABERU = new VocabEntryDetail(1358280L, true,
-			List.of("食べる"), List.of("たべる"),
-			List.of(new VocabSense(List.of("to eat"), List.of("v1", "vt"), List.of()),
-					new VocabSense(List.of("to live on (e.g. a salary)", "to live off"), List.of("v1", "vt"), List.of())));
+	// Fixtures copy real JMdict entries as the updater stores them (D77), including the
+	// expanded POS/misc text (not codes, X10). Checked against a full load on 2026-11-14.
 
-	/** たばこ: kana-only, not common. */
-	private static final VocabEntryDetail TABAKO = new VocabEntryDetail(1415370L, false,
-			List.of(), List.of("たばこ"),
-			List.of(new VocabSense(List.of("tobacco", "cigarette"), List.of("n"), List.of("uk"))));
+	/** 食べる: two kanji writings, one kana reading, two senses, common. */
+	private static final VocabEntryDetail TABERU = new VocabEntryDetail(1358280L, true,
+			List.of("食べる", "喰べる"), List.of("たべる"),
+			List.of(new VocabSense(List.of("to eat"), List.of("Ichidan verb", "transitive verb"), List.of()),
+					new VocabSense(List.of("to live on (e.g. a salary)", "to live off", "to subsist on"),
+							List.of("Ichidan verb", "transitive verb"), List.of())));
+
+	/** たんま: kana-only (no kanji writing), not common, one misc tag. */
+	private static final VocabEntryDetail TANMA = new VocabEntryDetail(2083020L, false,
+			List.of(), List.of("タンマ", "たんま"),
+			List.of(new VocabSense(List.of("truce (during a children's game)", "time out", "King's X"),
+					List.of("noun (common) (futsuumeishi)"), List.of("children's language"))));
 
 	@Autowired
 	private MockMvc mvc;
@@ -87,23 +92,23 @@ class VocabularyControllerTests {
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.entSeq", is(1358280)))
 				.andExpect(jsonPath("$.common", is(true)))
-				.andExpect(jsonPath("$.kanji", contains("食べる")))
+				.andExpect(jsonPath("$.kanji", contains("食べる", "喰べる")))
 				.andExpect(jsonPath("$.readings", contains("たべる")))
 				.andExpect(jsonPath("$.senses", hasSize(2)))
 				.andExpect(jsonPath("$.senses[0].glosses", contains("to eat")))
-				.andExpect(jsonPath("$.senses[0].partsOfSpeech", contains("v1", "vt")))
-				.andExpect(jsonPath("$.senses[1].glosses", contains("to live on (e.g. a salary)", "to live off")));
+				.andExpect(jsonPath("$.senses[0].partsOfSpeech", contains("Ichidan verb", "transitive verb")))
+				.andExpect(jsonPath("$.senses[1].glosses", contains("to live on (e.g. a salary)", "to live off", "to subsist on")));
 		}
 
 		@Test
 		void kanaOnlyEntryHasEmptyKanjiAndKeepsMiscTags() throws Exception {
-			given(vocabulary.findByEntSeq(1415370L)).willReturn(Optional.of(TABAKO));
+			given(vocabulary.findByEntSeq(2083020L)).willReturn(Optional.of(TANMA));
 
-			mvc.perform(get(BASE + "/1415370"))
+			mvc.perform(get(BASE + "/2083020"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.kanji", hasSize(0)))
 				.andExpect(jsonPath("$.common", is(false)))
-				.andExpect(jsonPath("$.senses[0].miscTags", contains("uk")));
+				.andExpect(jsonPath("$.senses[0].miscTags", contains("children's language")));
 		}
 
 		@Test
@@ -144,13 +149,13 @@ class VocabularyControllerTests {
 		@Test
 		void returnsEntriesInServiceOrderWithPageMetadata() throws Exception {
 			given(vocabulary.searchEntries("た", PageRequest.of(1, 2)))
-				.willReturn(new PageImpl<>(List.of(TABERU, TABAKO), PageRequest.of(1, 2), 7));
+				.willReturn(new PageImpl<>(List.of(TABERU, TANMA), PageRequest.of(1, 2), 7));
 
 			mvc.perform(get(BASE).param("q", "た").param("page", "1").param("size", "2"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(2)))
 				.andExpect(jsonPath("$.content[0].entSeq", is(1358280)))
-				.andExpect(jsonPath("$.content[1].entSeq", is(1415370)))
+				.andExpect(jsonPath("$.content[1].entSeq", is(2083020)))
 				// via-dto serialization (D28): stable "page" object, not Spring's PageImpl internals
 				.andExpect(jsonPath("$.page.number", is(1)))
 				.andExpect(jsonPath("$.page.size", is(2)))

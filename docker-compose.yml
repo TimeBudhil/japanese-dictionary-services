@@ -1,6 +1,10 @@
 # Local dev stack for the dictionary service (D16, D19).
 # Ports 5433/9201 so it can run beside the updater's stack (5432/9200).
 # Credentials are local-only dev values. Production uses real secrets via env vars.
+#
+# Seed mode (default): schema + seed data. Empty mode for a full load (D74):
+#   docker compose down -v && DICTIONARY_SEED=false docker compose up -d
+# then run the updater against it (docs/CONTEXT.md, "Running locally").
 services:
   postgres:
     image: postgres:16
@@ -10,11 +14,13 @@ services:
       POSTGRES_USER: dictionary_owner
       POSTGRES_PASSWORD: dictionary_owner
       DB_READER_PASSWORD: dictionary_reader
+      DICTIONARY_SEED: ${DICTIONARY_SEED:-true}
     ports:
       - "5433:5432"
     volumes:
       - dictionary-postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./docker/postgres/seed:/seed:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dictionary_owner -d dictionary"]
       interval: 5s
@@ -47,6 +53,7 @@ services:
         condition: service_healthy
     environment:
       ES_URL: http://elasticsearch:9200
+      DICTIONARY_SEED: ${DICTIONARY_SEED:-true}
     volumes:
       - ./docker/elasticsearch:/es-init:ro
     entrypoint: ["sh", "/es-init/init.sh"]
