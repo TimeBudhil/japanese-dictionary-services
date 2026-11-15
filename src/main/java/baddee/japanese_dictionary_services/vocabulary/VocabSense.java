@@ -11,8 +11,9 @@ import java.util.Objects;
  * the whole entry.
  *
  * @param glosses English translations, most important first
- * @param partsOfSpeech JMdict part-of-speech tags, e.g. {@code v1}, {@code n}
- * @param miscTags JMdict misc tags, e.g. {@code uk} (usually written in kana), {@code sl} (slang)
+ * @param partsOfSpeech JMdict part-of-speech tags as their expanded text, e.g.
+ *        {@code noun (common) (futsuumeishi)}, not the code {@code n}
+ * @param miscTags JMdict misc tags as their expanded text, e.g. {@code slang}
  */
 public record VocabSense(List<String> glosses, List<String> partsOfSpeech, List<String> miscTags) {
 

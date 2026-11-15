@@ -59,7 +59,7 @@ class VocabularyControllerTests {
 	private static final String ALLOWED_ORIGIN = "http://localhost:5173"; // from application.properties
 
 	// Fixtures copy real JMdict entries as the updater stores them (D77), including the
-	// expanded POS/misc text (not codes, X10). Checked against a full load on 2026-11-14.
+	// expanded POS/misc text (not codes, X10).
 
 	/** 食べる: two kanji writings, one kana reading, two senses, common. */
 	private static final VocabEntryDetail TABERU = new VocabEntryDetail(1358280L, true,

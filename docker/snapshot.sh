@@ -1,6 +1,6 @@
 #!/bin/sh
-# Save and restore the dev stack's data volumes (D71), so a full load (about 25 min)
-# is done once and restored in about a minute.
+# Save and restore the dev stack's data volumes (D71), so a full load (about 16 min)
+# is done once and restored in about 30 s.
 #
 #   sh docker/snapshot.sh save [name]      # default name: full
 #   sh docker/snapshot.sh restore [name]

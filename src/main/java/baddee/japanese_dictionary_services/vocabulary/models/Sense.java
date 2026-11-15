@@ -26,8 +26,7 @@ import org.hibernate.annotations.Immutable;
  * the updater yet (X3), so they are not here.
  *
  * <p>Glosses and tags keep the JMdict order through their order columns
- * ({@code gloss_order}, {@code pos_order}, {@code misc_order}). The updater adds these in
- * X8 (D34); this class already expects them.
+ * ({@code gloss_order}, {@code pos_order}, {@code misc_order}).
  *
  * <p>The three collections load lazily with {@link FetchMode#SUBSELECT}: touching one sense's
  * glosses loads the glosses of <b>every</b> sense from the same query in one SQL statement. So
