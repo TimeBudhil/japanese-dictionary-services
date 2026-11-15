@@ -39,6 +39,8 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 
 - **Open decisions** (`O<n>`): give your advice, then let the user choose with a question.
 - **Update the docs along with the code**, in the same change.
+- **The user makes every commit.** At the end of each unit of work, stop with a suggested commit
+  message, wait for "committed", then check `git status` before continuing.
 - **End every task** with:
   - `Docs:` and the files updated, or why none needed it.
   - `Choices I made:` the small implementation choices, in the chat only. They go into the docs
