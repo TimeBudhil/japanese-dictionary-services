@@ -7,9 +7,9 @@ _Last updated: 2026-11-14_
 
 ## What the application is
 
-**baddee** is an app for Japanese learners and anyone dealing with Japanese media or
-society (a jisho.org-style dictionary, plus learning features later). It was one repo
-(`~/repos/baddeeApp`) and is being split into one repo per application:
+An app for Japanese learners and anyone dealing with Japanese media or society (a
+jisho.org-style dictionary, plus learning features later). It has **one repo per
+application**; these two are the application's repos today:
 
 | Repo | Role | Writes | Reads |
 |---|---|---|---|
@@ -67,6 +67,7 @@ Note: diagram V03 says MySQL. The decision is **Postgres** (`postgres:16`).
 | `kanji_radical` | `kanji` FK, `radical` FK | many-to-many |
 | `name_entry` | `ent_seq` PK, `kanji[]`, `readings[]`, `name_types[]`, `translations[]`, `retired_at` | ~740k rows. `[]` = `text[]` |
 | `source_version` | `feed_id` PK, `content_hash`, timestamps | updater bookkeeping; ignore |
+| `flyway_schema_history` | Flyway's record of applied migrations | Only in a DB the updater built (empty mode / full load, D74), not in seed mode; ignore |
 
 ### Elasticsearch indexes (written by the updater)
 
@@ -222,11 +223,13 @@ Then save it: `sh docker/snapshot.sh save` (D71). To load one spoke only: `POST 
 | candidate | A result a feature module returns to `search` before ranking |
 | match tier | Ranking class used by `search`: exact > deinflected > prefix > partial |
 | default list | Premade read-only word/kanji list served by `lists` |
+| retired entry | Updater term (its ADR-0001): an entry whose key left upstream. The Postgres row stays (`retired_at` set), the ES document is deleted. This service returns it on the detail endpoint like an active entry (D76) |
+| seed mode / empty mode | The two ways the dev stack starts on empty volumes: seed data, or an empty DB for a full load (`DICTIONARY_SEED=false`) (D74) |
+| full load / snapshot | A full load = the updater importing every feed into the dev stack (~16 min). A snapshot = its saved volumes, restored in ~30 s (`docker/snapshot.sh`, D71) |
 
 ## Reference material
 
 - `written_reports/Architectures/Container_Diagram_V0{1,2,3}.JPG`: hand-drawn container diagrams (V03 is current).
 - `written_reports/Archived/`: early data model (`japanese_app_data_model.puml`), use cases, story map, pipeline sketch. Includes ideas not yet sourced (pitch accent, frequency, grammar points).
-- `~/repos/baddeeApp/claude-logs/2026-09-19.md`: updater build log and decisions.
 - Updater docs: `NEXT_STEPS.md` (status, decisions U1–U9), `CONTEXT.md` (its glossary: feed, spoke, entry, retired entry), `docs/adr/`, `docs/configuration.md` (profiles).
-- `~/repos/baddeeApp/updaterComponent` is the **old** copy of the updater; its newest work was ported (D73). Don't change it.
+- The updater's history (build, Flyway, retirement, profiles) is in its own git log (D73).
