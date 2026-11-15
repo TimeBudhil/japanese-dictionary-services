@@ -9,9 +9,9 @@ _Last updated: 2026-11-14_
 
 - **Where we are:** Phase 0 (foundation) and Phase 1 (vocabulary) are done and verified on a full
   load. `./mvnw test` is green. The updater's `main` has its full history and Flyway V1–V4.
-- **Docs restructure in progress (D78):** step 3 (this repo) is done. Left: step 4, the updater's
-  docs in the same layout; step 5, a `CLAUDE.md` in both repos.
-- **Then Phase 2 (kanji).** Before coding, settle or re-defer O5–O9, then decide O11–O14.
+- **Docs system (D78) is in place** in both repos; its rules are in `CLAUDE.md`.
+- **Next: Phase 2 (kanji).** Before coding, settle or re-defer O5–O9, then decide O11–O14.
+  Ask the updater for the order check X8 before the kanji and names phases end.
 - **Data:** `docker compose up -d` gives seed data (8 kanji 日本語食書猫学校, 16 radicals).
   `sh docker/snapshot.sh restore full` gives every kanji (snapshot exists on the dev machine only).
 - **Copy from `vocabulary/`:** the API interface + records, `services/`, `repository/`,
