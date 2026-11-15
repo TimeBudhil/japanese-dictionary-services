@@ -15,8 +15,8 @@ _Last updated: 2026-11-14_
 - Phase 0 is **done** and verified on a Docker machine _(2026-11-14)_: schema, ES mappings, app boot with `validate`, read-only role, seed dataset.
 - Phase 1 (vocabulary) is **done** and verified against a full updater load _(2026-11-14)_: `validate` with the order columns, real ES queries, 6 SQL queries per 100-entry page, stable paging. `./mvnw test` is green (Modulith `verify()` + 21 controller tests).
 - The Docker run found and fixed bugs in both repos (ES client/server versions, updater boot, column sizes, CRLF scripts). See X8, X9 and D57–D60.
-- The updater repo was missing five commits of its own history (Flyway, retirement, FK indexes, profiles, integration tests). They were restored, plus X8 as Flyway V4 (D73, branch `updater-history-and-sense-order`, uncommitted follow-ups, not merged yet). This repo now follows Flyway: two stack modes (seed / empty for full loads, D74), `schema.sql` = the migrations, no large objects (X7). Phase 0 and 1 were re-checked on the Flyway-built schema (see the Phase 0 verify box).
-- **Next: Phase 2 (kanji).** Open decisions O5–O9 (Phase 1 template choices) are deferred by the user _(2026-11-13)_; the current behaviour stays until they are decided.
+- The updater repo was missing five commits of its own history (Flyway, retirement, FK indexes, profiles, integration tests). They were restored, plus X8 as Flyway V4 (D73, committed on branch `updater-history-and-sense-order`, not merged into `main` yet). This repo now follows Flyway: two stack modes (seed / empty for full loads, D74), `schema.sql` = the migrations, no large objects (X7). Phase 0 and 1 were re-checked on the Flyway-built schema (see the Phase 0 verify box).
+- **Next: Phase 2 (kanji). A new session starts at [Phase 2, "Start here"](#start-here-handoff-written-2026-11-14).** Open decisions O5–O9 (Phase 1 template choices) are deferred by the user _(2026-11-13)_; the current behaviour stays until they are decided. O11–O14 (kanji design) are new and come first in Phase 2.
 
 ## Build order
 
@@ -92,11 +92,51 @@ Phase 0 foundation → 1 vocabulary → 2 kanji → 3 names → 4 sentences →
 
 ## Phase 2 — kanji
 
-- [ ] `models/`: `Kanji` (`text[]` columns via `@JdbcTypeCode(SqlTypes.ARRAY)`), `Radical`, `kanji_radical` many-to-many.
-- [ ] Endpoints: `GET /api/v1/kanji/{character}`, `GET /api/v1/kanji?radicals=…` (radical search: kanji containing **all** selected radicals), `GET /api/v1/radicals` (radical picker, grouped by stroke count). Optional filters: stroke count, grade, joyo.
-- [ ] Return `stroke_paths` for stroke-order display.
-- [ ] Service API for `search`: lookup by character(s) contained in the query.
-- [ ] Controller unit tests.
+### Start here (handoff, written 2026-11-14)
+
+**Before the first line of code**
+1. Updater: the 2026-11-14 work (restored history, V4, compose, diagnostics, `dictionary_reader`)
+   is committed on branch `updater-history-and-sense-order`, **not yet merged into `main`**. Merge it
+   first so both repos agree. Phase 2 needs nothing new from the updater (V4 does not touch the
+   kanji tables).
+2. Settle or re-defer **O5–O9** (all say "before Phase 2"; deferred by the user on 2026-11-13), then
+   **O11–O14** below. Use the CLI selector workflow (top of this file).
+3. Data: `docker compose up -d` (seed mode: 8 kanji 日本語食書猫学校, their 16 radicals) or
+   `sh docker/snapshot.sh restore full` (every kanji; snapshot `full` exists on the dev machine
+   only). Without the snapshot, do a full load (CONTEXT.md, "Running locally").
+
+**Read first**: CONTEXT.md (module layout and conventions); decisions D37 (module API facade),
+D25/D45/D46 (security chain, CORS), D28/D43/D44 (paging, limits), D29/D41 (errors, `Optional`),
+D38/D40 (entity conventions), D35 (fetching without N+1), D49/D77 (controller tests, real fixtures).
+
+**Copy from `vocabulary/`** (the Phase 1 template): `VocabularyApi` + its records in the base
+package; `services/VocabularyService` + `VocabEntryReader` (`@Transactional(readOnly)`);
+`repository/VocabularyRepository` (`Repository<…>`, `find*` only); `integration/VocabularySecurityConfig`;
+`aop/VocabularyLoggingAspect`; `controller/VocabularyController` + `VocabEntryNotFoundException`;
+`VocabularyControllerTests`.
+
+**Data facts** (full load, 2026-11-14; Postgres only, no ES index for kanji)
+
+| Table | Facts |
+|---|---|
+| `kanji` | 13,138 rows: 13,108 from KanjiDic2 + **30 bare rows** (radical forms such as ⺉ ⺌, created by RADKFILE/KanjiVG: no codepoint, readings, meanings or grade). PK `character` (`varchar`). Lists are `text[]` (map as `List<String>` with `@JdbcTypeCode(SqlTypes.ARRAY)`). `meanings` on 10,384; `stroke_paths` (SVG path `d` strings, stroke order) on **6,447** only; `grade` on 2,999 (values 1–6, 8, 9, 10); `joyo` true on 2,136; `jlpt` = **old** 1–4 levels on 2,230; `frequency` = KanjiDic2 newspaper rank. `kunyomi` keeps KanjiDic2 notation: okurigana after a dot (`た.べる`), affix dashes (`-び`). `retired_at`: none retired |
+| `radical` | 253 RADKFILE radicals, `stroke_count` 1–17 (most 2–4). 6 radicals have no `kanji` row |
+| `kanji_radical` | 6,355 kanji decomposed (RADKFILE), at most 12 radicals per kanji. FK on both sides; `radical` indexed (V3), `kanji` is the PK's first column |
+
+Example: 日 = `65e5`, on `ニチ, ジツ`, kun `ひ, -び, -か`, meanings `day, sun, Japan, counter for days`,
+4 strokes, grade 1, jōyō, old JLPT 4, frequency 1, 4 stroke paths, radical 日.
+
+**Tasks**
+- [ ] `models/`: `Kanji`, `Radical` as `@Immutable` entities (D2, D38, D40: nullable `Integer`/`Boolean`). Kanji ↔ radicals read-only (`@ManyToMany` over `kanji_radical`, or a join entity), lazy, no N+1 for a page (D35 pattern). Don't map `retired_at` unless O12 says so.
+- [ ] `repository/`: `find*` methods only. Radical search: kanji containing **all** selected radicals (O11).
+- [ ] Module API (D37): `KanjiApi` + records (e.g. `KanjiDetail`, `RadicalGroup`) in `kanji/`. `findByCharacter` returns `Optional` (D41). For `search`: kanji for the characters of a query, in query order, without duplicates (as D54).
+- [ ] Endpoints: `GET /api/v1/kanji/{character}` (404 if unknown), `GET /api/v1/kanji?radicals=…` (O11, O13), `GET /api/v1/radicals` (picker, grouped by stroke count, O14). Optional filters: stroke count, grade, jōyō. Return `stroke_paths` for stroke-order display.
+- [ ] `integration/KanjiSecurityConfig`: copy of the vocab chain, `@Order(100)` (D45). It must claim **both** `/api/v1/kanji/**` and `/api/v1/radicals/**`: `/api/v1/radicals` is outside the kanji path, and the root chain denies unclaimed `/api` paths (D25).
+- [ ] `aop/KanjiLoggingAspect` (copy of the vocab aspect, D47).
+- [ ] Controller tests (D22, D49) with **real** fixtures copied from the data (D77), e.g. 日 and 猫 above, a bare row (⺉), a kanji without stroke paths.
+- [ ] Seed: if a case is missing, add it to `KANJI` in `docker/generate-seed.py` and regenerate from a full load (D59). Candidates: a bare row, a kanji without stroke paths, a kanji with many radicals.
+- [ ] Verify on the stack: `validate` passes, radical search returns the right kanji (spot-check against RADKFILE), query count per page is constant (`spring.jpa.show-sql`).
+- Before Phase 2 ends: check whether the order of `meanings[]` / readings arrays matters and is kept (D65, updater U8).
 - Later: draw input / handwriting search (see Later modules).
 
 ## Phase 3 — names
@@ -273,6 +313,10 @@ Each has Claude's current advice. Settle each one at the phase shown.
 | O7 | Declare `spring-boot-starter-aspectj` in the pom (D48)? | **Yes.** One line; makes the aspects' dependency explicit | Before Phase 2 |
 | O8 | HTTP response shape: controllers return the module API records (`VocabEntryDetail`, `VocabSense`) directly, so their field names (`kanji`, `readings`, `partsOfSpeech`, `miscTags`, …) **are** the public JSON contract. Keep, or add a `dto/` layer? | **Keep for now.** Add `dto/` only when the HTTP shape must differ from the API shape. Impact: renaming a record field changes the JSON | Before Phase 2 (template) |
 | O9 | Module security chains `permitAll` **every method**, so `POST`/`PUT`/`DELETE` get a 405 (not 403). Restrict to `GET`/`HEAD`? | **Keep `permitAll`.** 405 is the correct HTTP answer and no write handlers exist. Restricting is one line (`requestMatchers(GET, HEAD).permitAll()`, `anyRequest().denyAll()`) if a stricter net is wanted | Before Phase 2 (template) |
+| O11 | Radical search: how to match "all selected radicals", and in what order? | **SQL on `kanji_radical`**: `WHERE radical IN (:r) GROUP BY kanji HAVING count(*) = :n`, then order by stroke count, then frequency (nulls last), then character. Paged per D28. Bare rows (no KanjiDic2 data) excluded | Phase 2 start |
+| O12 | `GET /api/v1/kanji/{character}` for bare rows (radical forms, no KanjiDic2 data) and for retired kanji? | **Return both**, unchanged, like D76 for vocab: the row exists, fields are null/empty. Only `search` and radical search leave out bare rows | Phase 2 start |
+| O13 | Kanji response shape: one record for detail and list, or a smaller list item (no stroke paths) for `?radicals=` pages? | **Two records**: `KanjiDetail` (everything, incl. `strokePaths`, radicals) and `KanjiSummary` (character, stroke count, grade, jōyō, main meanings). A radical-search page then stays small. Relates to O8 (records are the JSON contract) | Phase 2 start |
+| O14 | `GET /api/v1/radicals`: what does the picker get? | **All 253 radicals grouped by stroke count**, not paged (small, static), each with its character and kanji count. Optionally later: the radicals still possible after a selection (the usual picker UX), via a `?with=` parameter | Phase 2 start |
 
 ## Later (not scheduled)
 
