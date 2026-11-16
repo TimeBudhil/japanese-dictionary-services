@@ -244,3 +244,12 @@ Open decisions closed this session (see D79–D89):
 | O14 | What does `GET /api/v1/radicals` return? | All 253, grouped by stroke count, with kanji counts, not paged | Phase 2 |
 
 Verified on a full load: `validate` passes; 化+木 returns 休体侏保…, matching RADKFILE; queries per request: detail 2, radical search ≤ 2, radicals list 1. The 30 bare rows come from KanjiVG (no kanji_radical rows): 21 radical forms or characters KanjiDic2 lacks, 9 CJK compatibility ideographs (U+F9xx).
+
+Outcome (2026-11-16). All Phase 2 tasks above are done. O5–O9 were accepted as advised (D79–D83).
+O11–O14 went as advised (D84–D87). For O14 the user chose the grouped shape, even though the
+session had advised a flat list by then. The session asked three more questions that had no O id:
+RADKFILE stand-in radicals are returned as stored (D88); the filters are `strokes` (exact), `grade`
+and `joyo` (D89); greying out radicals that can't combine was put off and listed under "Later" in
+PLAN.md (alternatives offered: `/radicals?selected=…`, or compatible radicals inside the search
+response). The archived data note above calls bare rows "radical forms"; the full load shows they
+come from KanjiVG (see the verification line, and CONTEXT.md).
