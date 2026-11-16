@@ -3,7 +3,7 @@
 How the service works and the rules it follows: only what the code can't tell you.
 Tasks and decisions: [`PLAN.md`](./PLAN.md). Running it: [`README.md`](../README.md).
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-16_
 
 ## The application
 
@@ -55,7 +55,14 @@ What they don't show:
 - `reading.kanji`: true = kanji writing (keb), false = kana reading (reb).
 - `example_sentence.id` is the Japanese Tatoeba id. `index_words` is a space-separated list of
   headwords, a loose link to vocab with no foreign key.
-- `kanji.jlpt` is the **old** 1–4 scale. `source_version` and `flyway_schema_history` are the
+- **Kanji.** Arrays are in KanjiDic2 / KanjiVG order. Every jōyō kanji has stroke paths.
+  `codepoint` hex is mixed case as KanjiDic2 gives it (`732b`, `342E`); it is returned as stored.
+- **Bare rows** come from KanjiVG: stroke paths only, no KanjiDic2 data and no radicals. 21 are
+  radical forms or characters KanjiDic2 lacks (⺉, 々); 9 are CJK compatibility ideographs that
+  look like ordinary kanji (令 U+F9A8, not U+4EE4). `codepoint IS NULL` identifies them.
+- **RADKFILE stand-ins.** About 20 radicals are written as a kanji containing them (犯 for 犭,
+  艾 for 艹, 尚 for ⺌, 化 for 亻); the API returns them as stored (D88).
+- `kanji.jlpt` is the **old** 1–4 scale (`oldJlpt` in the API). `source_version` and `flyway_schema_history` are the
   updater's bookkeeping; ignore them.
 - ES has no `id` field in the updater's mapping. ES adds it dynamically, and vocab search sorts
   on `id.keyword` last for stable paging.
@@ -68,7 +75,7 @@ Root package `baddee.japanese_dictionary_services`. One Spring Modulith module p
 | Module | Job | Status |
 |---|---|---|
 | `vocabulary` | Vocab details (Postgres) + search candidates (ES) | done, **the template** |
-| `kanji` | Kanji, radicals, radical search | next |
+| `kanji` | Kanji, radicals, radical search (Postgres only) | done |
 | `names` | Names | |
 | `sentences` | Example sentences (Postgres + ES) | |
 | `normalization` | Romaji → kana, era years, numerals | |
@@ -117,6 +124,6 @@ variable fails startup. The updater runs Java 26 / Boot 4.1.1 in package `badee`
 | candidate | A hit a module returns to `search` before ranking |
 | match tier | Ranking class: exact > deinflected > prefix > partial |
 | retired entry | Gone upstream; row kept, ES document deleted |
-| bare row | A `kanji` row with only radical data (radical forms such as ⺉) |
+| bare row | A `kanji` row with only KanjiVG stroke paths (radical forms such as ⺉) |
 | seed / empty mode | How the dev stack starts: small seed data, or empty for a full load |
 | full load / snapshot | All feeds imported (~16 min) / its saved volumes (restore ~30 s) |

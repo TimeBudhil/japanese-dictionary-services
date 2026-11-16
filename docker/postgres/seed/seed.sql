@@ -13,7 +13,18 @@
 --   vocab 1206730: 学校: two kanji writings (学校 / 學校)
 --   vocab 1012840: やばい: slang misc tag
 --   vocab 2561870: a gloss longer than 255 characters (text column)
---   kanji 日本語食書猫学校 with radicals and stroke paths
+--   kanji 日: every field filled
+--   kanji 本: common kanji
+--   kanji 語: common kanji
+--   kanji 食: common kanji
+--   kanji 書: common kanji
+--   kanji 猫: RADKFILE stand-in radicals (犯 for 犭, 艾 for 艹)
+--   kanji 学: stand-in radical 尚 for ⺌
+--   kanji 校: common kanji
+--   kanji 休: radical search 化 (亻) + 木
+--   kanji 体: radical search 化 (亻) + 木, second hit
+--   kanji ⺉: bare row (KanjiVG only: no codepoint, readings, meanings or radicals)
+--   kanji 㐆: KanjiDic2 data but no stroke paths, grade or frequency
 --   name 5002725: さくら: kana-only name (empty kanji array)
 --   name 5543705: 田中: name with kanji
 --   sentences 170682, 207310: index_words hit seeded vocab (猫, 食べる)
@@ -176,11 +187,12 @@ insert into sense_misc (sense_id, misc_order, misc) values (57579, 0, 'abbreviat
 insert into sense_misc (sense_id, misc_order, misc) values (57580, 0, 'word usually written using kana alone');
 insert into sense_misc (sense_id, misc_order, misc) values (57580, 1, 'slang');
 
--- radical: 16 rows
+-- radical: 17 rows
 insert into radical (character, stroke_count) values ('一', 1);
 insert into radical (character, stroke_count) values ('五', 4);
 insert into radical (character, stroke_count) values ('亠', 2);
 insert into radical (character, stroke_count) values ('冖', 2);
+insert into radical (character, stroke_count) values ('化', 2);
 insert into radical (character, stroke_count) values ('口', 3);
 insert into radical (character, stroke_count) values ('子', 3);
 insert into radical (character, stroke_count) values ('尚', 3);
@@ -194,7 +206,11 @@ insert into radical (character, stroke_count) values ('艾', 3);
 insert into radical (character, stroke_count) values ('言', 7);
 insert into radical (character, stroke_count) values ('食', 9);
 
--- kanji: 8 rows
+-- kanji: 12 rows
+insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('㐆', '3406', '{}', '{}', '{}', array['to follow', 'to trust to', 'to put confidence in', 'to depend on', 'to turn around', 'to turn the body']::text[], 6, null, false, null, null, 4, '{}');
+insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('⺉', null, '{}', '{}', '{}', '{}', null, null, false, null, null, null, array['M39.02,26.33c1.14,1.14,1.26,2.17,1.26,4.77c0,6.9-0.02,23.45-0.02,33.15', 'M62.77,10.33c1.33,1.33,1.76,2.54,1.76,5.02c0,14.56-0.01,68.41-0.01,73.37c0,11.53-7.27,2.16-8.96,0']::text[]);
+insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('休', '4f11', array['キュウ']::text[], array['やす.む', 'やす.まる', 'やす.める']::text[], '{}', array['rest', 'day off', 'retire', 'sleep']::text[], 6, 1, true, 4, 642, 9, array['M35,16.5c0.25,1.75,0.25,4.25-0.88,6.8C28.91,35.01,22.37,46.02,10.5,60.29', 'M26.28,42.5c0.72,1.25,1.26,3.48,1.26,4.75c0,12.75-0.07,29.88-0.26,42.25c-0.02,1.54-0.04,2.97-0.04,4.25', 'M37.65,38.83c2.45,0.97,5.18,0.75,7.73,0.54c11.76-0.97,24.94-3.35,37.49-4.01c2.65-0.14,5.39-0.22,7.99,0.39', 'M61.43,14c0.82,0.75,1.87,2.12,1.87,3.7c0,8.8,0.05,53.72-0.12,72.05c-0.03,2.88-0.06,4.91-0.08,5.75', 'M62.43,38.32c0,2.18-1.1,4.31-1.9,6.04C54.57,57.4,44.96,71.84,35,78.75', 'M64.12,38.08c4.45,8.37,16.21,25.33,24.99,33.19c1.96,1.76,4.35,4.18,6.9,5']::text[]);
+insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('体', '4f53', array['タイ', 'テイ']::text[], array['からだ', 'かたち']::text[], array['なり']::text[], array['body', 'substance', 'object', 'reality', 'counter for images']::text[], 7, 2, true, 3, 88, 9, array['M31.75,16.25c0.23,2.15-0.05,3.95-0.8,5.78C26.88,32,21,45.88,9.12,60', 'M23.78,42.75c1.11,1.11,1.23,2.89,1.31,4.49c0.46,10.12-0.23,30.08-0.5,41.01c-0.06,2.38-0.09,4.36-0.09,5.75', 'M37.28,36.89c0.95,0.24,3.21,0.59,5.72,0.36c11.97-1.12,30.25-4,42.78-4.7c2.52-0.14,4.42,0.01,6,0.25', 'M61.88,12c1.06,1.06,1.6,2.75,1.6,4.38c0,0.85,0.05,55.5-0.12,74.13c-0.03,2.9-0.05,4.93-0.08,5.74', 'M61.88,36.37c0,1.38-0.51,2.64-0.94,3.49C55.07,51.39,42.61,66.29,32.5,72.5', 'M64.38,36.75c3.77,7.25,17.11,24.4,23.75,30.78c1.71,1.64,3.85,3.76,6.13,4.47', 'M46.54,74.65c1.23,0.29,3.48,0.39,4.71,0.29c10.8-0.93,17.26-2.18,24.7-2.46c2.05-0.08,3.28,0.14,4.3,0.28']::text[]);
 insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('学', '5b66', array['ガク']::text[], array['まな.ぶ']::text[], array['たか', 'のり']::text[], array['study', 'learning', 'science']::text[], 8, 1, true, 4, 63, 39, array['M29.5,17.25c3.5,3,6.5,7.25,7.75,9.75', 'M49,12c1.25,2,4.75,8.25,5.25,11.5', 'M75,11c0.25,1.75-0.12,2.75-0.75,4.25c-1.29,3.1-4.25,7.38-6.5,9.75', 'M21.25,33.75c-0.12,4.75-2,12.5-3.75,16.25', 'M23.5,36.5c17-1.62,42.38-5.5,60-5.75c9.5-0.13,4.12,5.12,0,9', 'M37.25,46.5c1,0.25,3.75,0.25,5.5-0.25s18.25-4,20-4s2.75,0.75,1,2.25S54.5,53.5,53,54.75', 'M50.75,55.75c4,8.75,7.18,24.67,1.75,38c-2.75,6.75-7.75,1.25-9.75-2', 'M15.75,67.75c1.75,1,4.64,1.36,7.5,1c15.88-2,44.43-6.25,61.37-5.5c2.5,0.11,4.72,0.25,6.39,1']::text[]);
 insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('日', '65e5', array['ニチ', 'ジツ']::text[], array['ひ', '-び', '-か']::text[], array['あ', 'あき', 'いる', 'く', 'くさ', 'こう', 'す', 'たち', 'に', 'にっ', 'につ', 'へ']::text[], array['day', 'sun', 'Japan', 'counter for days']::text[], 4, 1, true, 4, 1, 72, array['M31.5,24.5c1.12,1.12,1.74,2.75,1.74,4.75c0,1.6-0.16,38.11-0.09,53.5c0.02,3.82,0.05,6.35,0.09,6.75', 'M33.48,26c0.8-0.05,37.67-3.01,40.77-3.25c3.19-0.25,5,1.75,5,4.25c0,4-0.22,40.84-0.23,56c0,3.48,0,5.72,0,6', 'M34.22,55.25c7.78-0.5,35.9-2.5,44.06-2.75', 'M34.23,86.5c10.52-0.75,34.15-2.12,43.81-2.25']::text[]);
 insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('書', '66f8', array['ショ']::text[], array['か.く', '-が.き', '-がき']::text[], array['かき']::text[], array['write']::text[], 10, 2, true, 4, 169, 73, array['M30.74,20.63c2.01,0.49,3.84,0.58,5.91,0.39c9.45-0.89,28.54-2.97,37.54-3.64c2.92-0.22,4.18,1.24,3.66,3.55c-0.4,1.76-2.56,9.62-3.88,16.56', 'M11.89,32.34c3.17,0.66,5.87,0.47,9.58,0.19c20.16-1.52,48.41-3.9,67.91-4.64c4.08-0.16,7.07,0.26,8.91,0.59', 'M29.86,41.38c1.64,0.49,3.39,0.52,4.84,0.44c9.67-0.57,27.55-2.07,37.43-2.85c1.93-0.15,3.14-0.08,4.59,0.07', 'M30.04,52.06c1.47,0.26,3.65,0.54,5.12,0.43c12.34-0.98,25.59-2.23,36.78-3.31c2.43-0.23,4.41-0.19,5.63-0.07', 'M17,63.44c2,0.58,5.67,0.57,7.66,0.41c20.78-1.7,42.92-3.93,61.09-4.48c3.33-0.1,5.33,0.15,6.99,0.42', 'M52.69,9.52c1.33,1.33,1.95,2.98,1.95,4.71c0,5.67,0.22,33.72,0.31,45.77', 'M31.25,71.75c0.43,0.46,1.24,1.44,1.43,2.7c1.11,7.42,2.22,14.33,3.18,20.74c0.18,1.2,0.34,2.38,0.49,3.57', 'M33.75,73.75c14.98-2.05,36.1-3.71,44.41-4.26c3.33-0.22,5.09,1.76,4.6,4.33c-0.99,5.22-2.01,11.55-3.81,19.41c-0.3,1.31-0.74,2.55-1.15,3.72', 'M35.5,83.75C46.79,83.03,65.75,81.5,80.25,81', 'M37.25,95.25c10.7-0.68,26.5-1.38,40.5-2']::text[]);
@@ -204,7 +220,12 @@ insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stro
 insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('語', '8a9e', array['ゴ']::text[], array['かた.る', 'かた.らう']::text[], '{}', array['word', 'speech', 'language']::text[], 14, 2, true, 4, 301, 149, array['M26,15.25c2.82,1.41,7.29,5.8,8,8', 'M12.37,32.97c1.25,0.28,2.88,0.66,4.36,0.53c7.02-0.59,17.78-1.75,25.95-3c1.52-0.23,3.57-0.38,5.16,0.03', 'M18.73,45.76c0.38,0.18,2.71,0.2,3.1,0.18c3.97-0.21,9.79-1.19,14.46-2.31c1.67-0.4,2.71-0.38,3.86-0.08', 'M18.73,58.89c0.89,0.23,1.89,0.36,3.35,0.15c3.89-0.54,10.71-1.51,14.85-2.29c0.7-0.13,1.82-0.26,2.61-0.1', 'M17.14,71.9c0.63,0.62,1.12,1.65,1.23,2.57c0.63,5.03,1.51,10.28,2.23,15.59c0.14,1.03,0.27,2.02,0.41,2.93', 'M19.37,73.6c5.67-0.94,15.47-2.73,20.36-3.48c1.49-0.22,2.39,1.05,2.18,2.08c-0.71,3.44-2.27,9.75-3.23,13.89', 'M21.47,89.02c3.95-0.45,10.71-1.19,16.28-1.61c1.21-0.09,2.36-0.17,3.41-0.22', 'M51.79,17.49c1.38,0.26,3.91,0.28,5.27,0.15C63.88,17,72.62,15.62,80,15.32c2.3-0.1,3.67,0.04,4.81,0.15', 'M67.75,20.25c0.37,1.25,0.5,2.38,0.23,3.75c-0.75,3.78-6.03,23.83-7.96,31.58', 'M52.18,36.96c1.82,0.66,4.17,0.95,5.84,0.66c8.48-1.5,16.13-3.06,22.74-4.1c2.49-0.39,4.05,1.27,3.71,2.93c-0.6,2.93-2.48,11.43-3.74,17.86', 'M46.33,58.46c1.13,0.24,3.94,0.2,5.07,0.08c12.34-1.29,19.11-2.39,40.88-4.02c1.88-0.14,3.75-0.02,4.69,0.09', 'M52.5,69.88c0.93,0.93,1.42,2.28,1.54,3.31c0.71,6.06,1.42,12.65,2.06,19.3c0.15,1.5,0.28,2.44,0.4,3.75', 'M54.99,71.67c9.47-1.45,23.75-3.41,28.85-3.9c2.14-0.21,3.28,0.98,2.86,2.93c-0.84,3.88-3.08,12.57-4.39,17.58', 'M57.2,91.49c5.94-0.55,14.67-1.24,23.54-1.76c1.3-0.08,2.63-0.13,3.97-0.2']::text[]);
 insert into kanji (character, codepoint, onyomi, kunyomi, nanori, meanings, stroke_count, grade, joyo, jlpt, frequency, classical_radical, stroke_paths) values ('食', '98df', array['ショク', 'ジキ']::text[], array['く.う', 'く.らう', 'た.べる', 'は.む']::text[], array['ぐい']::text[], array['eat', 'food']::text[], 9, 2, true, 4, 328, 184, array['M52.75,10.5c0.11,0.98-0.19,2.67-0.97,3.93C45,25.34,31.75,41.19,14,51.5', 'M52.75,16.25c5.09,4.8,25.71,19.61,33.7,24.9c2.68,1.78,5.37,2.79,8.55,3.35', 'M52.25,29.25c1,1,1.5,2.25,1.5,3.5c0,2,0,3,0,5.5', 'M38,40c0.83,0.47,2.19,1,3.86,0.83c9.39-0.96,21.95-2.76,23.25-2.84c1.67-0.1,3.14,0.88,3.11,2.53C68.2,41.8,67,53.25,66.34,62.4c-0.07,0.94-0.13,1.36-0.13,1.99', 'M40.83,51.73C47.25,51.25,59.5,50,66,49.75', 'M40.69,63.9c7.04-0.52,16.55-1.62,24.6-2.04', 'M38.25,40.25c1.12,1.12,1.5,2.62,1.5,4c0,9.12,0,43.62,0,47.25c0,4,1,4.88,4.12,2.88c2.93-1.87,6.75-5.25,10.88-8.38', 'M74,64c0.25,1.25,0.09,2.57-0.75,3.5c-3.5,3.88-4.5,4.88-7.25,7.5', 'M51.5,71C55.75,71,77,90,81,92.75c2.49,1.71,4.62,2.62,7.5,3.5']::text[]);
 
--- kanji_radical: 18 rows
+-- kanji_radical: 23 rows
+insert into kanji_radical (kanji, radical) values ('休', '化');
+insert into kanji_radical (kanji, radical) values ('休', '木');
+insert into kanji_radical (kanji, radical) values ('体', '一');
+insert into kanji_radical (kanji, radical) values ('体', '化');
+insert into kanji_radical (kanji, radical) values ('体', '木');
 insert into kanji_radical (kanji, radical) values ('学', '冖');
 insert into kanji_radical (kanji, radical) values ('学', '子');
 insert into kanji_radical (kanji, radical) values ('学', '尚');

@@ -194,3 +194,53 @@ Docker verification _(2026-11-14)_. Made by Claude while testing; no user decisi
 | D75 | The read-only login is **`dictionary_reader`** in both stacks and for production _(user's call, 2026-11-14)_; the updater's `api_reader` was renamed (U9) | One name for one job. This repo's `DB_USERNAME` default (D27) already used it |
 | D76 | **Retired entries are returned unchanged** by `GET /api/v1/vocabulary/{entSeq}` _(user's call, 2026-11-14)_. `VocabEntry` does not map `retired_at`. Search never returns them (the updater deletes their ES documents) | Matches updater ADR-0001: stored ids keep resolving. Clients cannot tell a retired entry from an active one; add a flag later if the user service needs it |
 | D77 | Controller-test fixtures **copy real JMdict entries** (id, writings, readings, senses, expanded POS/misc text) _(user's call, 2026-11-14)_ | The old fixtures were from memory: `1415370` is 第一歩, not たばこ, and real POS/misc are the expanded DTD text, not codes (X10) |
+
+
+## 2026-11-16 — Phase 2 (kanji) done
+
+## Phase 2 — kanji
+
+Data (full load; Postgres only, no ES index for kanji):
+- `kanji`: 13,138 rows. 13,108 from KanjiDic2, plus 30 **bare rows** (radical forms such as ⺉ ⺌,
+  with no codepoint, readings, meanings or grade). Stroke paths on only 6,447; meanings on 10,384;
+  grade on 2,999 (1–6, 8–10); jōyō on 2,136; `jlpt` is the **old** 1–4 scale (2,230 rows).
+  `kunyomi` keeps KanjiDic2 notation (`た.べる`, `-び`). None retired.
+- `radical`: 253 rows, 1–17 strokes. 6 radicals have no `kanji` row.
+- `kanji_radical`: 6,355 kanji decomposed, at most 12 radicals each.
+- Example, 日: on ニチ ジツ, kun ひ -び -か, "day, sun, Japan, counter for days", 4 strokes,
+  grade 1, jōyō, old JLPT 4, frequency 1, radical 日.
+
+Tasks:
+- [ ] `models/`: `Kanji`, `Radical` as read-only entities; `text[]` as `List<String>` with
+  `@JdbcTypeCode(SqlTypes.ARRAY)`; nullable numbers/booleans as wrappers. Kanji ↔ radicals lazy,
+  constant queries per page (D35).
+- [ ] `repository/`: read methods only. Radical search returns kanji containing **all** selected
+  radicals (O11).
+- [ ] `KanjiApi` + records in `kanji/` (D37). Lookup by character returns `Optional`. For `search`:
+  the kanji of a query's characters, in query order, no duplicates.
+- [ ] Endpoints: `GET /api/v1/kanji/{character}` (404 if unknown), `GET /api/v1/kanji?radicals=…`,
+  `GET /api/v1/radicals` (O13, O14). Optional filters: strokes, grade, jōyō. Include stroke paths.
+- [ ] Security chain claiming **both** `/api/v1/kanji/**` and `/api/v1/radicals/**`; the root chain
+  denies any `/api` path no module claims (D25).
+- [ ] Logging aspect and controller tests, copied from vocabulary. Fixtures are real rows (D77):
+  日, 猫, a bare row (⺉), a kanji without stroke paths.
+- [ ] Seed: add missing cases to `KANJI` in `docker/generate-seed.py` and regenerate (D59).
+- [ ] Verify on the stack: `validate` passes, radical search is right (spot-check RADKFILE),
+  query count per page is constant.
+- [ ] Check whether the order of `meanings[]` and the reading arrays matters and is kept.
+
+Open decisions closed this session (see D79–D89):
+
+| # | Question | Advice | When |
+|---|---|---|---|
+| O5 | Keep the 100-character limit on `q`? | Keep | Before Phase 2 |
+| O6 | Logging aspects: rely on the log pattern for the request id, or add it in code? | Rely on the pattern | Before Phase 2 |
+| O7 | Declare `spring-boot-starter-aspectj` in the pom (today it comes in through JPA)? | Yes | Before Phase 2 |
+| O8 | API records are the JSON contract; add a `dto/` layer? | Not until the shapes must differ | Before Phase 2 |
+| O9 | Module chains allow every method (writes get 405). Restrict to GET/HEAD? | Keep as is | Before Phase 2 |
+| O11 | Radical search: match and order | SQL `GROUP BY kanji HAVING count = n`; order by strokes, frequency, character; paged; no bare rows | Phase 2 |
+| O12 | Detail for bare rows and retired kanji? | Return both unchanged, like D76 | Phase 2 |
+| O13 | One kanji record, or a detail + a smaller list record? | Two: `KanjiDetail`, `KanjiSummary` (no stroke paths) | Phase 2 |
+| O14 | What does `GET /api/v1/radicals` return? | All 253, grouped by stroke count, with kanji counts, not paged | Phase 2 |
+
+Verified on a full load: `validate` passes; 化+木 returns 休体侏保…, matching RADKFILE; queries per request: detail 2, radical search ≤ 2, radicals list 1. The 30 bare rows come from KanjiVG (no kanji_radical rows): 21 radical forms or characters KanjiDic2 lacks, 9 CJK compatibility ideographs (U+F9xx).

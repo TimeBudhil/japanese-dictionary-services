@@ -41,8 +41,21 @@ VOCAB = {
     2561870: "a gloss longer than 255 characters (text column)",
 }
 
-# Kanji with their radicals (RADKFILE) and stroke paths (KanjiVG).
-KANJI = ["日", "本", "語", "食", "書", "猫", "学", "校"]
+# Kanji with their radicals (RADKFILE) and stroke paths (KanjiVG), each picked for an edge case.
+KANJI = {
+    "日": "every field filled",
+    "本": "common kanji",
+    "語": "common kanji",
+    "食": "common kanji",
+    "書": "common kanji",
+    "猫": "RADKFILE stand-in radicals (犯 for 犭, 艾 for 艹)",
+    "学": "stand-in radical 尚 for ⺌",
+    "校": "common kanji",
+    "休": "radical search 化 (亻) + 木",
+    "体": "radical search 化 (亻) + 木, second hit",
+    "⺉": "bare row (KanjiVG only: no codepoint, readings, meanings or radicals)",
+    "㐆": "KanjiDic2 data but no stroke paths, grade or frequency",
+}
 
 NAMES = {
     5002725: "さくら: kana-only name (empty kanji array)",
@@ -136,7 +149,7 @@ def main() -> None:
         "--",
         "-- Edge cases covered:",
         *[f"--   vocab {i}: {why}" for i, why in VOCAB.items()],
-        f"--   kanji {''.join(KANJI)} with radicals and stroke paths",
+        *[f"--   kanji {c}: {why}" for c, why in KANJI.items()],
         *[f"--   name {i}: {why}" for i, why in NAMES.items()],
         f"--   sentences {', '.join(map(str, SENTENCES))}: index_words hit seeded vocab (猫, 食べる)",
         "",
