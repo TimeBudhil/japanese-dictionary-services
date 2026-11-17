@@ -62,6 +62,10 @@ What they don't show:
   look like ordinary kanji (令 U+F9A8, not U+4EE4). `codepoint IS NULL` identifies them.
 - **RADKFILE stand-ins.** About 20 radicals are written as a kanji containing them (犯 for 犭,
   艾 for 艹, 尚 for ⺌, 化 for 亻); the API returns them as stored (D88).
+- **Names.** `name_entry` arrays are in JMnedict order; `name_types` holds each type once. The
+  lists are flat, so which reading goes with which writing is not stored. Name search depends on
+  two functions and trigram indexes that the updater's X5 migration adds; until it lands (and
+  `schema.sql` is regenerated), `GET /api/v1/names?q=` returns 500 (D91).
 - `kanji.jlpt` is the **old** 1–4 scale (`oldJlpt` in the API). `source_version` and `flyway_schema_history` are the
   updater's bookkeeping; ignore them.
 - ES has no `id` field in the updater's mapping. ES adds it dynamically, and vocab search sorts
@@ -76,7 +80,7 @@ Root package `baddee.japanese_dictionary_services`. One Spring Modulith module p
 |---|---|---|
 | `vocabulary` | Vocab details (Postgres) + search candidates (ES) | done, **the template** |
 | `kanji` | Kanji, radicals, radical search (Postgres only) | done |
-| `names` | Names | |
+| `names` | Names, search by kanji/reading/translation (Postgres only) | built, waits on X5 |
 | `sentences` | Example sentences (Postgres + ES) | |
 | `normalization` | Romaji → kana, era years, numerals | |
 | `parsing` | Input type, deinflection, sentence splitting | |

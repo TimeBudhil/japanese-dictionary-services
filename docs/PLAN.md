@@ -7,29 +7,28 @@ _Last updated: 2026-11-16_
 
 ## Next session
 
-- **Where we are:** Phases 0–2 (foundation, vocabulary, kanji) are done and verified on a full
-  load. `./mvnw test` is green (40 tests). The kanji module follows the vocabulary template.
-- **Next: Phase 3 (names).** No open decision blocks it. Copy `kanji/` (Postgres only, `text[]`
-  arrays, no ES), not `vocabulary/`.
-- **Before Phase 3 ends:** X8 is still open for the `name_entry` arrays. Its kanji half is
-  answered: KanjiDic2 lists go straight into `text[]` columns in file order, so order is kept.
-  Tell the updater so X8 shrinks to names only.
-- **Data:** the dev volumes hold a full load right now. `docker compose down -v && docker compose
-  up -d` gives seed data (12 kanji incl. bare row ⺉ and 㐆 without strokes); `sh docker/snapshot.sh
-  restore full` brings the full load back.
-- **Measure name search** on the full ~740k rows before asking the updater for indexes (X5).
+- **Where we are:** Phases 0–2 are done. Phase 3 (names) is built and tested (`./mvnw test`
+  green, 57 tests) but its search needs the updater's X5 migration: until then
+  `GET /api/v1/names?q=` returns 500. Detail by id works today.
+- **X5 is specified** word for word in the updater's `docs/PLAN.md` (pg_trgm, two functions, two
+  indexes). It was tested by hand on the full load (3–40 ms per search, a lone kana ~200 ms),
+  then the `full` snapshot was restored, so the dev DB has no X5 objects.
+- **Next:** implement X5 in the updater, run `sh docker/generate-schema.sh`, `docker compose down
+  -v && docker compose up -d`, and check `GET /api/v1/names?q=田中` on seed data. Take a new
+  full-load snapshot afterwards (the schema changed). That closes Phase 3; then Phase 4.
+- **X8 is answered for names too:** the parser appends `keb`/`reb`/`trans_det` in file order and
+  keeps the first of each repeated name type. Tell the updater; only X3's future tables remain.
+- **Data:** the dev volumes hold a full load. `docker compose down -v && docker compose up -d`
+  gives seed data; `sh docker/snapshot.sh restore full` brings the full load back.
 
 ## Build order
 
-0 foundation ✅ → 1 vocabulary ✅ → 2 kanji ✅ → 3 names → 4 sentences → 5 normalization →
-6 parsing → 7 search → 8 lists
+0 foundation ✅ → 1 vocabulary ✅ → 2 kanji ✅ → 3 names (waits on X5) → 4 sentences →
+5 normalization → 6 parsing → 7 search → 8 lists
 
 ## Phase 3 — names
 
-- [ ] `NameEntry` (`text[]` columns), Postgres only (D18).
-- [ ] `GET /api/v1/names/{entSeq}`, `GET /api/v1/names?q=` (kanji, readings, translations).
-- [ ] Measure on the full ~740k rows. If slow, ask the updater for indexes (X5).
-- [ ] API for `search`, controller tests.
+- [ ] After X5: regenerate `schema.sql`, check name search on seed data, new full-load snapshot.
 
 ## Phase 4 — sentences
 
@@ -73,9 +72,9 @@ Tracked in the updater's `docs/PLAN.md`; listed here for what they block.
 |---|---|---|
 | X2 | kuromoji + ICU fields on `vocab` and `example-sentence`; English gets an exact tier | match quality, Phases 4, 7 |
 | X3 | Store JMdict `<field>` and `<dial>` tags | Phase 8 |
-| X5 | GIN / `pg_trgm` indexes on `name_entry`, if Phase 3 needs them | Phase 3 |
+| X5 | `pg_trgm` + two functions + trigram indexes on `name_entry`, spec in the updater's PLAN (D91) | name search, Phase 3 |
 | X6 | Word-level JLPT source (after O3) | Phase 8 |
-| X8 | Keep upstream order for the remaining lists (names, X3's tables; kanji checked, kept) | Phase 3 |
+| X8 | Keep upstream order for the remaining lists (X3's tables; kanji and names checked, kept) | Phase 8 |
 | X10 | Store POS/misc as codes (`n`, `v1`), not expanded text — a design change in both repos | Phases 7, 8 |
 
 ## Decisions in force
@@ -128,6 +127,8 @@ Full reasoning for each id: `HISTORY.md`.
 | D87 | `GET /api/v1/radicals`: all radicals grouped by stroke count, with kanji counts, not paged (was O14) |
 | D88 | RADKFILE stand-in radicals (犯 for 犭) are returned as stored; display mapping is the front-end's or a later updater task |
 | D89 | Radical search filters: `strokes` (exact), `grade`, `joyo`, combined with AND |
+| D90 | Name search tiers: exact (writing, reading or whole translation, any case) > prefix > a later translation word starts with q; then by id; no retired names (was O15) |
+| D91 | Name search queries call the updater's X5 functions; the updater adds them first, this service never creates database objects |
 
 ## Open decisions
 

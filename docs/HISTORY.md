@@ -253,3 +253,41 @@ and `joyo` (D89); greying out radicals that can't combine was put off and listed
 PLAN.md (alternatives offered: `/radicals?selected=…`, or compatible radicals inside the search
 response). The archived data note above calls bare rows "radical forms"; the full load shows they
 come from KanjiVG (see the verification line, and CONTEXT.md).
+
+## 2026-11-16 — Phase 3 (names) built, search waits on X5
+
+## Phase 3 — names
+
+- [x] `NameEntry` (`text[]` columns), Postgres only (D18).
+- [x] `GET /api/v1/names/{entSeq}`, `GET /api/v1/names?q=` (kanji, readings, translations).
+- [x] Measure on the full ~740k rows. If slow, ask the updater for indexes (X5).
+- [x] API for `search`, controller tests.
+
+Measured on the full load (743,691 names, none retired): unindexed, a tiered search page took
+~2 s and its count ~0.9 s. GIN trigram indexes on two space-joined, lower-cased text forms (each
+value preceded by a space, so `LIKE '% q%'` is a word-start match) bring it to 3–40 ms, including
+2-character Japanese like 田中; a lone kana such as た takes ~200 ms (trigrams need 2+ characters).
+Plain GIN indexes on the `kanji`/`readings` arrays were tried and dropped from the spec: the
+queries use `= any()`, which they can't serve. `array_to_string` is only STABLE, so the updater
+must wrap it in IMMUTABLE functions to index it.
+
+Decisions:
+- **D90 (was O15) — name match tiers.** Options offered: tiers with word-start partial
+  (advised), tiers with substring partial (`li` would match `William`; 1–2 letter queries can't use
+  the index), or exact + prefix only. Chosen as advised: EXACT = q equals a kanji writing, a reading
+  or a whole translation (case-insensitive); PREFIX = one of them starts with q; PARTIAL = a later
+  word of a translation starts with q. Order by tier, then ent_seq (names have no frequency or
+  common flag). Retired names never appear in search.
+- **D91 — X5 sequencing.** Options offered: updater first (advised), names now with unindexed
+  `unnest()` SQL and a rewrite later, or no indexes. Chosen: updater first, but the session was
+  only allowed to write the X5 spec into the updater's `docs/PLAN.md`, not its code. The names
+  queries call `name_entry_jp_text` / `name_entry_en_text` by name; this service never creates
+  database objects. To verify before X5 lands, the user chose to apply the spec SQL by hand to the
+  dev DB as `dictionary_owner`, test, and then restore the `full` snapshot.
+
+Verified on the full load with the spec SQL applied: 田中 → 475 hits, 田中 (5543705) first;
+`tanaka kakuei` → 2; `kakuei` → 36, exact "Kakuei" names first; `a%b` and `x_y`
+→ 0 (wildcards escaped); paging page 0 + 1 (size 3) equals page 0 (size 6). Detail by id and the
+404 work. Then `snapshot.sh restore full`; the dev DB has no X5 objects. X8 for names was also
+answered by reading the updater's `JmnedictParser`: `keb`/`reb`/`trans_det` are appended in file
+order and repeated name types keep the first occurrence.
