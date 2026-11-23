@@ -217,14 +217,16 @@ databases and never call each other.
 | R12.3 | Upserts are idempotent under stable keys | Running the same file twice gives identical rows | `✅` |
 | R12.4 | Entries gone upstream are retired, not deleted, behind a retire guard (U11) | A file below the guard retires nothing and logs a WARN | `✅` |
 | R12.5 | Search copies are written to ES `vocab` and `example-sentence`. Names and kanji stay in Postgres only | Index counts equal active Postgres rows | `✅` |
+| R12.6 | A feed never runs twice at once: a trigger for a feed that is already running is skipped and logged | A manual run started during the cron run of the same feed logs "already running" and writes nothing | `⬜` |
+| R12.7 | Each feed's `retire-guard` is tuned from the logged retirement counts of real releases (first run: ~0.0005% per feed, against the 2% allowed) | After 3 real releases, every feed's guard is set from its logged counts | `⬜` |
 
 #### R13: Admin API `🟡` · `hub`
 
 | ID | Requirement | Acceptance criterion | Status |
 |----|-------------|----------------------|--------|
 | R13.1 | `POST /admin/updates` runs all feeds, and `/admin/updates/{id}` runs one | Returns 2xx, and the run appears in the logs | `✅` |
-| R13.2 | The admin API accepts only Cognito **access** tokens from the `updater-admin` group | 200 for a member, 403 for a non-member, 401 with no token. ID tokens are rejected | `🟡` decoder built and tested (`CognitoJwtDecoderConfig`), but the pool isn't created and it isn't live |
-| R13.3 | The dev token and stub decoder are removed once no environment uses them | `StubJwtDecoderConfig` is gone | `⬜` |
+| R13.2 | The admin API accepts only Cognito **access** tokens from the `updater-admin` group: create the user pool, an admin app client and the group, and set `COGNITO_ISSUER_URI` and `COGNITO_CLIENT_IDS` (`prod` profile) | 200 for a member, 403 for a non-member, 401 with no token. ID tokens are rejected | `🟡` decoder built and tested (`CognitoJwtDecoderConfig`), but the pool isn't created and it isn't live |
+| R13.3 | The dev token and stub decoder are removed once no environment uses them | `StubJwtDecoderConfig` and the `updater.admin.dev-token` / `stub-auth` properties are gone | `⬜` |
 
 #### R14: Data the dictionary service needs `🟡` · spokes as listed
 
@@ -245,7 +247,9 @@ databases and never call each other.
 | R15.1 | Each backend builds a container image, and CI runs `./mvnw verify` before building it | A merge to `main` produces a tagged image only if verify passes | `🟡` (the updater has a `Dockerfile`; the dictionary service doesn't) |
 | R15.2 | The updater runs as **exactly one** instance (the cron runs in-process) | The deployment's instance count is fixed at 1 | `⬜` |
 | R15.3 | Secrets (`DB_*`, `ES_*`, `COGNITO_*`) come from the platform's secret store, never from images or repos | No secret appears in an image or a repo | `⬜` |
-| R15.4 | Postgres has `dictionary_reader` with read-only grants. ES has one write key (updater) and one read-only key (service) | N1.6 passes. The updater's key can write | `⬜` |
+| R15.4 | Postgres has `dictionary_reader` with read-only grants, created by infra from `docker/postgres/dictionary_reader.sql` with a real password. ES has one write key (updater) and one read-only key (service) | N1.6 passes. The updater's key can write | `⬜` |
+| R15.5 | The updater's memory is sized from a measured JMdict run (the JVM takes 75% of the container) | A full load completes with no out-of-memory error at the chosen size | `⬜` |
+| R15.6 | The updater's network allows outbound HTTPS to EDRDG, GitHub (KanjiVG) and Tatoeba, and inbound only from admin callers. `updater.kanjivg.url` is pinned, since GitHub can rate-limit (once seen as a 403) | An admin call from outside the allowed sources is refused. A full load succeeds | `⬜` |
 
 ### 2.2 Stretch
 
@@ -257,6 +261,14 @@ databases and never call each other.
 - **S11: Admin UI for feeds.** _Why stretch:_ the secured `/admin` API and curl are enough.
 - **S12: More than one updater instance** (ShedLock or an external schedule). _Why stretch:_ one is
   enough.
+- **S25: Local ES security** (`xpack.security.enabled=true`) so the dictionary service gets a
+  read-only ES user locally too. _Why stretch:_ production keys already enforce it (R15.4).
+- **S26: A config server** to replace the duplicated `local` / `docker` property files.
+  _Why stretch:_ two files are manageable.
+- **S27: Update container diagram V03**: Postgres (not MySQL), the local stacks, and the separate
+  observability ES. _Why stretch:_ the docs already say this in words.
+- **S28: Updater housekeeping**: remove `hibernate.dialect` (detected automatically) and upgrade
+  to Boot 4.1.2. _Why stretch:_ nothing is broken.
 
 ### 2.3 Out-of-Scope
 
@@ -455,6 +467,8 @@ _Skipped areas:_
 - **Hosting shape** (Fargate + Elastic Cloud, or one box with Compose) and the final budget.
   Decided after every application runs in a container (O4). It affects R15, N5.1, N5.6 and U15.
 - **Rate limit numbers** for N5.2. Decide at deploy time (O4).
+- **Observability design** (N2.4, N2.6; U16 is decided): OpenTelemetry vs Elastic APM, log
+  shipping, JSON logs, dashboards. Needs its own design session, with the updater.
 - **JmdictFurigana licence and format**: check it against U12 before R14.7.
 - **Front-end framework:** React is assumed. Confirm when the repo is created.
 - **O1** (tokenizer), **O2** (normalization), **O3** (JLPT source), **X10** (POS codes): already
