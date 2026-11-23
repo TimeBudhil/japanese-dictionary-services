@@ -11,7 +11,9 @@
       "_class": { "type": "keyword", "index": false, "doc_values": false },
       "japanese": { "type": "text" },
       "english": { "type": "text" },
-      "indexWords": { "type": "keyword" }
+      "indexWords": { "type": "keyword" },
+      "headwords": { "type": "keyword" },
+      "exampleFor": { "type": "keyword" }
     }
   }
 }
