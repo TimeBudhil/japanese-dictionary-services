@@ -32,8 +32,8 @@ import org.testcontainers.utility.MountableFile;
  * Images match {@code docker-compose.yml}. The app connects as {@code dictionary_reader}, not the
  * owner, so a write the app attempts would fail here as it would in production (D23).
  *
- * <p>Tests only read, so they share the data and need no reset. A subclass just extends this
- * class and uses {@link #mockMvc}. Paths are relative to the module root, where Maven runs.
+ * <p>Tests only read, so they share the data and need no reset. Paths are relative to the
+ * module root, where Maven runs.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
