@@ -8,10 +8,10 @@ _Last updated: 2026-11-23_
 
 ## Next session
 
-- **Closes:** R4.1–R4.4 (sentences, D97, D98), with `SentencesModuleIT`. Without Docker
-  they reach 🔵 and add their Docker steps below. R4.5 waits on R6, so R4 stays 🟡.
+- **Closes:** R4.1–R4.4 (sentences, D97, D98) and R1.5 (`containsKanji=`), each with its IT.
+  Without Docker they reach 🔵 and add their Docker steps below. R4.5 waits on R6.
+- **Then R5.1–R5.4** (normalization): decide O2 first. Pure code, fully unit-tested without Docker.
 - **Seed gap:** no seed sentence has `~` before Docker step 3, so R4.2's order is untested on seed.
-- **After that:** R1.5.
 
 ## Docker session
 
