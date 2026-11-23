@@ -3,7 +3,7 @@
 How the service works and the rules it follows: only what the code can't tell you.
 Tasks and decisions: [`PLAN.md`](./PLAN.md). Running it: [`README.md`](../README.md).
 
-_Last updated: 2026-11-23_
+_Last updated: 2026-11-24_
 
 ## The application
 
@@ -132,3 +132,7 @@ variable fails startup. The updater runs Java 26 / Boot 4.1.1 in package `badee`
 | bare row | A `kanji` row with only KanjiVG stroke paths (radical forms such as ⺉) |
 | seed / empty mode | How the dev stack starts: small seed data, or empty for a full load |
 | full load / snapshot | All feeds imported (~16 min) / its saved volumes (restore ~30 s) |
+
+## Integration tests
+
+- `*IT` classes extend `support/IntegrationTest`: full app, MockMvc, one shared Postgres and ES container started per JVM from the `docker/` init, mapping and seed files. The app connects as `dictionary_reader`. Surefire skips them; Failsafe runs them in `verify` (D99).

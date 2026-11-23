@@ -43,7 +43,8 @@ Needs: JDK 25+, Docker, a POSIX shell for `docker/*.sh` (Git Bash on Windows).
 
 ```bash
 docker compose up -d       # Postgres :5433, Elasticsearch :9201, seed data
-./mvnw test                # needs no stack
+./mvnw test                # needs no stack, no Docker
+./mvnw verify              # also runs the *IT classes on Testcontainers (needs Docker, not the compose stack)
 ./mvnw spring-boot:run     # needs the stack; http://localhost:8080/swagger-ui.html
 curl "localhost:8080/api/v1/vocabulary?q=日本"
 ```
