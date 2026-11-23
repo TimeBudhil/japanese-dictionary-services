@@ -1,6 +1,7 @@
 # japanese-dictionary-services — Plan
 
-What's next, what's left, and the decisions in force. How things work: [`CONTEXT.md`](./CONTEXT.md).
+What's next and the decisions in force. What's left is the ⬜/🟡/🔵 rows of
+[`REQUIREMENTS.md`](../written_reports/REQUIREMENTS.md) (D95). How things work: [`CONTEXT.md`](./CONTEXT.md).
 Done work and old decisions: [`HISTORY.md`](./HISTORY.md) (not read by default).
 
 _Last updated: 2026-11-23_
@@ -23,71 +24,9 @@ _Last updated: 2026-11-23_
 
 ## Build order
 
-0 foundation ✅ → 1 vocabulary ✅ → 2 kanji ✅ → 3 names (waits on X5) → 4 sentences →
-5 normalization → 6 parsing → 7 search → 8 lists → 9 furigana
-
-## Phase 3 — names
-
-- [ ] After X5: regenerate `schema.sql`, check name search on seed data, new full-load snapshot.
-
-## Phase 4 — sentences
-
-- [ ] `ExampleSentence` entity + read-only ES document (index `example-sentence`).
-- [ ] `GET /api/v1/sentences/{id}`, `?word=` (by index words), `?q=` (Japanese/English text).
-- [ ] API for `search` and for "example sentences of this word", controller tests.
-- [ ] After Phase 6: sentence detail returns word segments linked to `ent_seq` (R4.5).
-- [ ] `vocabulary`: words containing a given kanji, common first (R1.5).
-
-## Phase 5 — normalization
-
-Decide O2 first.
-- [ ] Romaji → kana (ん before vowels/y, っ, long vowels, wāpuro vs Hepburn).
-- [ ] Era years ↔ Gregorian (令和7年 ↔ 2025). Kanji numerals ↔ digits (二千二十五 ↔ 2025, 万/億).
-- [ ] Public API; endpoints optional.
-
-## Phase 6 — parsing
-
-Decide O1 first.
-- [ ] Detect input type: English, romaji, Japanese, likely name.
-- [ ] Deinflect: 食べられなかった → 食べる (potential + negative + past).
-- [ ] Split a sentence into words. Public API.
-
-## Phase 7 — search
-
-- [ ] `GET /api/v1/search?q=&types=vocabulary,kanji,names,sentences&page=&size=`.
-- [ ] Flow: detect input → normalize → deinflect → call each module → rank (D10).
-- [ ] One deterministic ranking: tier (exact > deinflected > prefix > partial) → common/frequency
-  → type, adjusted by input type (D17). Plain unit tests for the comparator.
-- [ ] Tag search (POS/misc), details when reached. A `tags=` parameter; the front-end turns `#tag` into it (R7.5).
-- [ ] The response reports input type, normalized form and deinflections tried (R7.6).
-
-## Phase 8 — lists
-
-- [ ] From current data: common words, POS, expressions, slang, kanji by grade/jōyō/JLPT/frequency.
-- [ ] Blocked: subject and dialect lists (X3), words by JLPT (O3, X6).
-- [ ] `GET /api/v1/lists`, `GET /api/v1/lists/{id}`. User-made lists live on the device (D94).
-- [ ] Word of the day: `GET /api/v1/lists/word-of-the-day` (R10).
-
-## Phase 9 — furigana
-
-- [ ] Furigana segments on vocab and sentence detail, from the updater's JmdictFurigana spoke (R9, R14.7).
-
-## Testing
-
-- [ ] An integration test per module against seed data (Testcontainers), run by CI (D93). Needs Docker.
-
-## Waiting on the updater
-
-Tracked in the updater's `docs/PLAN.md`; listed here for what they block.
-
-| # | Task | Blocks |
-|---|---|---|
-| X2 | kuromoji + ICU fields on `vocab` and `example-sentence`; English gets an exact tier | match quality, Phases 4, 7 |
-| X3 | Store JMdict `<field>` and `<dial>` tags | Phase 8 |
-| X5 | `pg_trgm` + two functions + trigram indexes on `name_entry`, spec in the updater's PLAN (D91) | name search, Phase 3 |
-| X6 | Word-level JLPT source (after O3) | Phase 8 |
-| X8 | Keep upstream order for the remaining lists (X3's tables; kanji and names checked, kept) | Phase 8 |
-| X10 | Store POS/misc as codes (`n`, `v1`), not expanded text — a design change in both repos | Phases 7, 8 |
+0 foundation ✅ → 1 vocabulary R1 ✅ → 2 kanji R2 ✅ → 3 names R3 (waits on X5) → 4 sentences R4 →
+5 normalization R5 → 6 parsing R6 → 7 search R7 → 8 lists R8, R10 → 9 furigana R9.
+Each phase's tasks, blockers (`X<n>`, `O<n>`) and status are its rows in REQUIREMENTS.md.
 
 ## Decisions in force
 
@@ -143,6 +82,7 @@ Full reasoning for each id: `HISTORY.md`.
 | D92 | This repo holds the app-wide docs: `written_reports/REQUIREMENTS.md` and the diagrams, for all four applications. Per-repo decisions stay in each repo; the updater links here |
 | D93 | Tests: controller tests + Modulith, and an integration test per module against seed data (Testcontainers), run by CI (replaces D22; requirement N1.5) |
 | D94 | User lists, search history and Anki/CSV/TSV import and export live in the front-end, on the device. The user service (accounts, sync) is Stretch |
+| D95 | REQUIREMENTS.md rows are the task list (status tags track progress); PLAN.md keeps only Next session, build order and decisions. Specs live in `written_reports/specs/`, gitignored |
 
 ## Open decisions
 
@@ -152,11 +92,3 @@ Full reasoning for each id: `HISTORY.md`.
 | O2 | Normalization: own code or a library | Own, table-driven, unit-tested | Phase 5 |
 | O3 | Word-level JLPT source (no official list exists) | A community list; needs an updater spoke (X6) | Phase 8 |
 | O4 | Deployment: hosting, hosted ES (must speak 9.x), CI/CD, tracing. Tentative budget $100–200/month | Decide with the updater | After every app runs in a container |
-
-## Later
-
-- Radical picker: grey out radicals that can't combine with the selection (`/radicals?selected=…`).
-- JPA/ES slice tests.
-- Modules from diagram V03: OCR, slang, kanji mastery map, word of the day, furigana, handwriting search.
-- Unsourced data ideas (see `written_reports/Archived/`): pitch accent, frequency, grammar points, audio.
-- Link `example_sentence.index_words` to vocab ids (in the updater).

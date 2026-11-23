@@ -8,11 +8,12 @@ Spring Boot modular monolith. All dictionary data is written by a separate repo,
 
 | File | Holds |
 |---|---|
-| [`docs/PLAN.md`](docs/PLAN.md) | **Start here.** Next session, remaining tasks, decisions in force, open decisions |
-| [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | What the **whole app** must do (front-end, this service, updater, user service), by module, with status |
+| [`docs/PLAN.md`](docs/PLAN.md) | **Start here.** Next session, build order, decisions in force, open decisions |
+| [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | What the **whole app** must do, by module. Its rows and status tags are the task list. Read one section at a time |
+| `written_reports/specs/` | Specs for work in progress. Local only (gitignored) |
 | [`docs/CONTEXT.md`](docs/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
 | [`docs/HISTORY.md`](docs/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
-| [`CLAUDE.md`](CLAUDE.md) | How Claude keeps these docs up to date |
+| [`CLAUDE.md`](CLAUDE.md) | Rules, including "Keeping the docs current": which doc each kind of change updates |
 | [`written_reports/Architectures/`](written_reports/Architectures/) | Hand-drawn container diagrams (V03 is current, but it says MySQL; it's Postgres) |
 | `../japanese-dictionary-updater-component/docs/PLAN.md` | The updater's tasks (`X<n>`) and decisions (`U<n>`) |
 

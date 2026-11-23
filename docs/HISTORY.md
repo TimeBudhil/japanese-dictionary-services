@@ -320,3 +320,85 @@ Second round (same day), after pulling the updater:
   both `tags=` and `#tag`; search on Enter only; English-only UI; Anki fields configurable per
   entry type; lists hold all four entry types; four cross-links; empty results explain the
   interpretation; list caps 100 × 5,000; import cap 5 MB / 5,000 rows.
+
+## 2026-11-23 — PLAN.md slimmed (D95)
+
+The task sections below left PLAN.md: REQUIREMENTS.md rows and their status tags are now the
+task list, to cut repeated context. Moved here word for word.
+
+## Phase 3 — names
+
+- [ ] After X5: regenerate `schema.sql`, check name search on seed data, new full-load snapshot.
+
+## Phase 4 — sentences
+
+- [ ] `ExampleSentence` entity + read-only ES document (index `example-sentence`).
+- [ ] `GET /api/v1/sentences/{id}`, `?word=` (by index words), `?q=` (Japanese/English text).
+- [ ] API for `search` and for "example sentences of this word", controller tests.
+- [ ] After Phase 6: sentence detail returns word segments linked to `ent_seq` (R4.5).
+- [ ] `vocabulary`: words containing a given kanji, common first (R1.5).
+
+## Phase 5 — normalization
+
+Decide O2 first.
+- [ ] Romaji → kana (ん before vowels/y, っ, long vowels, wāpuro vs Hepburn).
+- [ ] Era years ↔ Gregorian (令和7年 ↔ 2025). Kanji numerals ↔ digits (二千二十五 ↔ 2025, 万/億).
+- [ ] Public API; endpoints optional.
+
+## Phase 6 — parsing
+
+Decide O1 first.
+- [ ] Detect input type: English, romaji, Japanese, likely name.
+- [ ] Deinflect: 食べられなかった → 食べる (potential + negative + past).
+- [ ] Split a sentence into words. Public API.
+
+## Phase 7 — search
+
+- [ ] `GET /api/v1/search?q=&types=vocabulary,kanji,names,sentences&page=&size=`.
+- [ ] Flow: detect input → normalize → deinflect → call each module → rank (D10).
+- [ ] One deterministic ranking: tier (exact > deinflected > prefix > partial) → common/frequency
+  → type, adjusted by input type (D17). Plain unit tests for the comparator.
+- [ ] Tag search (POS/misc), details when reached. A `tags=` parameter; the front-end turns `#tag` into it (R7.5).
+- [ ] The response reports input type, normalized form and deinflections tried (R7.6).
+
+## Phase 8 — lists
+
+- [ ] From current data: common words, POS, expressions, slang, kanji by grade/jōyō/JLPT/frequency.
+- [ ] Blocked: subject and dialect lists (X3), words by JLPT (O3, X6).
+- [ ] `GET /api/v1/lists`, `GET /api/v1/lists/{id}`. User-made lists live on the device (D94).
+- [ ] Word of the day: `GET /api/v1/lists/word-of-the-day` (R10).
+
+## Phase 9 — furigana
+
+- [ ] Furigana segments on vocab and sentence detail, from the updater's JmdictFurigana spoke (R9, R14.7).
+
+## Testing
+
+- [ ] An integration test per module against seed data (Testcontainers), run by CI (D93). Needs Docker.
+
+## Waiting on the updater
+
+Tracked in the updater's `docs/PLAN.md`; listed here for what they block.
+
+| # | Task | Blocks |
+|---|---|---|
+| X2 | kuromoji + ICU fields on `vocab` and `example-sentence`; English gets an exact tier | match quality, Phases 4, 7 |
+| X3 | Store JMdict `<field>` and `<dial>` tags | Phase 8 |
+| X5 | `pg_trgm` + two functions + trigram indexes on `name_entry`, spec in the updater's PLAN (D91) | name search, Phase 3 |
+| X6 | Word-level JLPT source (after O3) | Phase 8 |
+| X8 | Keep upstream order for the remaining lists (X3's tables; kanji and names checked, kept) | Phase 8 |
+| X10 | Store POS/misc as codes (`n`, `v1`), not expanded text — a design change in both repos | Phases 7, 8 |
+
+## Later
+
+- Radical picker: grey out radicals that can't combine with the selection (`/radicals?selected=…`).
+- JPA/ES slice tests.
+- Modules from diagram V03: OCR, slang, kanji mastery map, word of the day, furigana, handwriting search.
+- Unsourced data ideas (see `written_reports/Archived/`): pitch accent, frequency, grammar points, audio.
+- Link `example_sentence.index_words` to vocab ids (in the updater).
+
+Decision:
+- **D95 — one task list.** The user, worried about context use, asked whether PLAN.md was
+  obsolete. Options offered: slim it (advised), delete it (decisions into REQUIREMENTS.md), or
+  keep it. Chosen: slim. REQUIREMENTS.md is read by section only. Specs go to
+  `written_reports/specs/`, gitignored.
