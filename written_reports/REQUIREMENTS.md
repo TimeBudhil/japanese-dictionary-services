@@ -4,7 +4,7 @@ The requirements for the **whole application**: all four applications, not just 
 This file is the authority for app-wide requirements (D92). Per-repo decisions stay in each repo's
 `docs/PLAN.md` (`D<n>` here, `U<n>` in the updater).
 
-_Last updated: 2026-11-24_
+_Last updated: 2026-11-23_
 
 ## Summary
 
@@ -232,14 +232,14 @@ databases and never call each other.
 
 | ID | Requirement | Acceptance criterion | Status |
 |----|-------------|----------------------|--------|
-| R14.1 | X5: `pg_trgm`, two functions and two trigram indexes on `name_entry` (spec in the updater's PLAN), for R3.2 | A name search takes 3–40 ms on the full load | `⬜` |
+| R14.1 | X5: `pg_trgm`, two functions and two trigram indexes on `name_entry` (spec in the updater's PLAN), for R3.2 | A name search takes 3–40 ms on the full load | `🔵` |
 | R14.2 | X2 (`jmdict`, `tatoeba`): kuromoji + ICU multi-fields, plus a keyword subfield on `glosses`, for R1.4 and R4.3 | The ES mapping has the fields, and an exact gloss query matches | `⬜` |
 | R14.3 | X3 (`jmdict`): store `<field>` and `<dial>` tags with order columns, for R8.3 | Rows exist after a re-import, in JMdict order | `⬜` |
 | R14.4 | X6 (new spoke): word-level JLPT, for R8.4 | Vocab rows carry a JLPT level from the chosen list | `⬜` blocked by O3 |
 | R14.5 | X8: keep upstream order for X3's new tables | Order columns exist | `✅` kanji and names checked; X3's tables get order columns as part of R14.3 |
 | R14.6 | X10 (`jmdict`): store POS and misc as JMdict codes, for R7.5 | Rows hold `n`, `v1`, not expanded text | `⬜` decision pending |
 | R14.7 | New spoke `furigana`: import JmdictFurigana, keyed by `ent_seq` plus the writing and reading, for R9 | Every common vocab writing that contains kanji has segments | `⬜` (licence check against U12 first) |
-| R14.8 | X12 (`tatoeba`): `headwords` and `exampleFor` keyword arrays on the `example-sentence` document, parsed from `index_words`, for R4.2 (D97) | Seed sentence 170682 has `headwords` 最近, 猫, は, 鼠, を, 食べる | `⬜` |
+| R14.8 | X12 (`tatoeba`): `headwords` and `exampleFor` keyword arrays on the `example-sentence` document, parsed from `index_words`, for R4.2 (D97) | Seed sentence 170682 has `headwords` 最近, 猫, は, 鼠, を, 食べる | `🔵` |
 
 #### R15: Deployment `⬜` · all backend repos · hosting deferred until everything is containerized (O4)
 

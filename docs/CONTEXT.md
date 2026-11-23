@@ -3,7 +3,7 @@
 How the service works and the rules it follows: only what the code can't tell you.
 Tasks and decisions: [`PLAN.md`](./PLAN.md). Running it: [`README.md`](../README.md).
 
-_Last updated: 2026-11-24_
+_Last updated: 2026-11-23_
 
 ## The application
 
