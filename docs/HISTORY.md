@@ -446,3 +446,14 @@ Docker steps left over. Options were to keep those steps in "Next session" (whic
 codeable work behind a machine change), a separate doc (one more file with its own budget), or a
 standing section in PLAN.md. Chosen: the section. "Next session" moves on to codeable work, and
 each Docker-only step is added to "Docker session" until a Docker machine clears them in one go.
+
+## 2026-11-23 — D101: five-step build order
+
+The user set the order: (1) R5 normalization and R6 parsing; (2) R7 search and ranking; (3) R4
+sentences with R4.5 segments, added to search; (4) R8 lists and R10 word of the day; (5) the
+Docker leftovers and end-to-end tests on the containerized stack (new N1.8). It replaces the
+earlier order (R4.1–R4.4 → R1.5 → R5 → R6 → R7 → R8, R10 → R9), so search is built on top of
+normalization and parsing before sentences join it. Gaps placed by Claude and accepted: R1.5 in
+step 2, X2 before step 3, R9 after step 4, R15.1 and N1.1–N1.2 in step 5. Implementation
+decisions (O1, O2, X10, O3, O4) are left to their own sessions. PLAN.md's budget went from 8 KB
+to 10 KiB.

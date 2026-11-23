@@ -22,7 +22,7 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 |---|---|---|
 | `CLAUDE.md` | These rules and pointers | 80 lines |
 | `README.md` | Index of the docs, return steps, how to run | 100 lines |
-| `docs/PLAN.md` | Next session, Docker session, build order, decisions in force, open decisions | 8 KB |
+| `docs/PLAN.md` | Next session, Docker session, build order, decisions in force, open decisions | 10 KiB |
 | `written_reports/REQUIREMENTS.md` | App-wide requirements; its rows and status tags are the task list (D95) | none |
 | `docs/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
 | `docs/HISTORY.md` | Done work, superseded decisions, verification notes. Append-only | none |

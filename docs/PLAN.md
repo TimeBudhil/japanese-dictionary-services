@@ -8,29 +8,30 @@ _Last updated: 2026-11-23_
 
 ## Next session
 
-- **Closes:** R4.1–R4.4 (sentences, D97, D98) and R1.5 (`containsKanji=`), each with its IT.
-  Without Docker they reach 🔵 and add their Docker steps below. R4.5 waits on R6.
-- **Then R5.1–R5.4** (normalization): decide O2 first. Pure code, fully unit-tested without Docker.
-- **Seed gap:** no seed sentence has `~` before Docker step 3, so R4.2's order is untested on seed.
+- **Closes:** R5.1–R5.4 (`normalization`) and R6.1–R6.4 (`parsing`), step 1 of the build order.
+  O2 and O1 are decided in their own session first.
 
 ## Docker session
 
-Docker-only steps saved up while working without it (D100). On a Docker machine do them in
-order, mark the rows ✅, empty the list. Now: the volumes hold a full load without X5;
-name search returns 500 and CI is red until step 3.
+Docker-only steps saved while working without it (D100), done in order on a Docker machine.
+Until step 3, name search returns 500 and CI is red.
 1. Updater: `./mvnw verify` (X5 and X12 ITs never ran).
 2. `sh docker/snapshot.sh restore full`, start the updater on it as the owner (Flyway applies only
    V5), put the `headwords`/`exampleFor` keyword mapping on the existing index (updater
    CONTEXT.md), re-run the `tatoeba` feed, time name search (R14.1), `snapshot.sh save` as `full`.
 3. Add a full-load sentence that marks 食べる with `~` to `SENTENCES` in `generate-seed.py`,
-   regenerate schema and seed, `docker compose down -v && docker compose up -d`.
+   regenerate schema and seed, `docker compose down -v && docker compose up -d` (R4.2's order).
 4. Here: `./mvnw verify`, then push for CI. Closes R3.2, R14.1, R14.8, N1.5.
 
 ## Build order
 
-Done: R11 (platform), R1 (except R1.4, R1.5), R2, R3 (R3.2 🔵). Next, in order: R4.1–R4.4 → R1.5 →
-R5 → R6 (+ R4.5) → R7 → R8, R10 → R9. Blockers (`X<n>`, `O<n>`) and status are on the rows in
-REQUIREMENTS.md.
+Done: R11, R1 (but R1.4, R1.5), R2, R3 (R3.2 🔵). Then, in order (D101):
+1. R5 normalization, R6 parsing (O1, O2 first).
+2. R7 search and ranking, plus R1.5. R7.5 waits on X10.
+3. R4 sentences with R4.5 segments, added to search; X2 first for R1.4 and R4.3's match quality.
+4. R8 lists (R8.3 needs X3; R8.4 needs O3, X6) and R10; then R9 furigana (R14.7).
+5. What's left of "Docker session", R15.1 (this service's Dockerfile), N1.8 containerized e2e,
+   N1.1–N1.2 timing on the full load. Then the front-end.
 
 ## Decisions in force
 
@@ -92,6 +93,7 @@ Full reasoning for each id: `HISTORY.md`.
 | D98 | Sentence detail returns retired sentences unchanged and leaves out raw `index_words`. Text search uses ES default analyzers until X2: `match_phrase` on Japanese, `match` on English, then by id |
 | D99 | Integration tests are `*IT`, run by Failsafe in `./mvnw verify` only; single Postgres and ES containers load the same `docker/` seed files; a minimal GitHub Actions workflow runs `./mvnw verify` |
 | D100 | Work without Docker goes on to 🔵; its Docker-only steps collect in PLAN.md "Docker session", done in one sitting on a Docker machine |
+| D101 | The five-step build order in "Build order" |
 
 ## Open decisions
 
