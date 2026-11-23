@@ -4,18 +4,41 @@ The read-only API of a Japanese dictionary app (vocabulary, kanji, names, exampl
 Spring Boot modular monolith. All dictionary data is written by a separate repo, the updater
 (`../japanese-dictionary-updater-component`); the two share only Postgres and Elasticsearch.
 
+## The docs
+
+| File | Holds |
+|---|---|
+| [`docs/PLAN.md`](docs/PLAN.md) | **Start here.** Next session, remaining tasks, decisions in force, open decisions |
+| [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | What the **whole app** must do (front-end, this service, updater, user service), by module, with status |
+| [`docs/CONTEXT.md`](docs/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
+| [`docs/HISTORY.md`](docs/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
+| [`CLAUDE.md`](CLAUDE.md) | How Claude keeps these docs up to date |
+| [`written_reports/Architectures/`](written_reports/Architectures/) | Hand-drawn container diagrams (V03 is current, but it says MySQL; it's Postgres) |
+| `../japanese-dictionary-updater-component/docs/PLAN.md` | The updater's tasks (`X<n>`) and decisions (`U<n>`) |
+
+This repo is the home of app-wide documents (D92).
+
+Ids in the docs: `D<n>` decision, `O<n>` open decision, `X<n>` a task in the updater repo; in
+REQUIREMENTS.md, `R<n>` in scope, `S<n>` stretch, `OUT<n>` out of scope, `N<n>` non-functional.
+Search `PLAN.md` (or REQUIREMENTS.md for requirement ids) for the id; for the full reasoning,
+search `HISTORY.md`.
+
 ## Coming back after a while
 
 1. Read **"Next session"** at the top of [`docs/PLAN.md`](docs/PLAN.md). It says where things
    stand and what to do first.
-2. Check both repos are clean: `git status` here and in `../japanese-dictionary-updater-component`.
-   The updater must sit next to this repo; the scripts below use that path.
-3. Start the stack and run the app (next section).
-4. When you need to know how something works, read [`docs/CONTEXT.md`](docs/CONTEXT.md).
-
-Requirements: JDK 25+, Docker, a POSIX shell for `docker/*.sh` (Git Bash on Windows).
+2. Check both repos are clean and up to date: `git status` and `git pull` here and in
+   `../japanese-dictionary-updater-component`. The updater must sit next to this repo; the
+   scripts below use that path.
+3. Find the requirement you are working on in
+   [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md): its module, status
+   (`🔵` = built without Docker, not yet checked on data) and acceptance criterion.
+4. Start the stack and run the app (next section).
+5. When you need to know how something works, read [`docs/CONTEXT.md`](docs/CONTEXT.md).
 
 ## Run it
+
+Needs: JDK 25+, Docker, a POSIX shell for `docker/*.sh` (Git Bash on Windows).
 
 ```bash
 docker compose up -d       # Postgres :5433, Elasticsearch :9201, seed data
@@ -62,20 +85,3 @@ take a new one after a schema change or an image upgrade.
 
 After regenerating: `docker compose down -v && docker compose up -d`, then start the app.
 It runs `ddl-auto=validate`, so a schema mismatch fails at startup.
-
-## The docs
-
-| File | Holds |
-|---|---|
-| [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | Requirements for the **whole app** (front-end, this service, updater, user service), by module |
-| [`docs/PLAN.md`](docs/PLAN.md) | Next session, remaining tasks, decisions in force, open decisions |
-| [`docs/CONTEXT.md`](docs/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
-| [`docs/HISTORY.md`](docs/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
-| [`CLAUDE.md`](CLAUDE.md) | How Claude keeps these docs up to date |
-| [`written_reports/Architectures/`](written_reports/Architectures/) | Hand-drawn container diagrams (V03 is current, but it says MySQL; it's Postgres) |
-| `../japanese-dictionary-updater-component/docs/PLAN.md` | The updater's tasks (`X<n>`) and decisions (`U<n>`) |
-
-This repo is the home of app-wide documents (D92).
-
-Ids in the docs: `D<n>` decision, `O<n>` open decision, `X<n>` a task in the updater repo.
-Search `PLAN.md` for the id; for the full reasoning, search `HISTORY.md`.

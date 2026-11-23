@@ -26,7 +26,9 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 | `written_reports/REQUIREMENTS.md` | App-wide requirements, by application, then In/Stretch/Out/NFR | none |
 
 - **README stays a lightweight index:** how to run, plus a link to every doc with its path.
-  A new doc gets a row in README's docs table.
+  A new doc gets a row in README's docs table, and a step in "Coming back after a while" if a
+  returning reader needs it. Section order is fixed: "The docs" first, then "Coming back after
+  a while", then "Run it" last.
 - **This repo holds the app-wide docs** (requirements, diagrams) for all four applications (D92).
 - **Requirements name the owning module** of every dictionary-service feature, and the spoke
   or `hub` for updater features. Change a status tag in the same change as the code.
