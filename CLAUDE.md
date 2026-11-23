@@ -64,8 +64,8 @@ Bump `_Last updated_` in each doc you change.
 ## Working
 
 - **Open decisions:** give your advice, then let the user choose with a question.
-- **The user makes every commit.** At the end of each unit of work, stop with a suggested commit
-  message, wait for "committed", then check `git status` before continuing.
+- **Claude may commit, but only on feature branches.** Commit attribution is off, so commits show
+  the user as author. Never commit to `main`; the user merges into `main` after review.
 - **End every task** with:
   - `Requirements:` the R-IDs whose status changed, or "none".
   - `Docs:` the files updated, or why none needed it.
