@@ -51,6 +51,8 @@ curl "localhost:8080/api/v1/vocabulary?q=日本"
 
 The ports differ from the updater's own stack (5432/9200), so both can run at once.
 
+CI (`.github/workflows/ci.yml`) runs `./mvnw -B verify` on every push and pull request.
+
 **Two modes**, chosen when the volumes are first created. Init scripts only run on empty
 volumes, so to switch, run `docker compose down -v` first.
 - **Seed mode** (default): the schema and a small seed (11 words, 8 kanji, 2 names, 2 sentences).
