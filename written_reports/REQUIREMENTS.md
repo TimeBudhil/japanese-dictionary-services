@@ -198,7 +198,7 @@ databases and never call each other.
 | N1.2 | Detail endpoints are at least as fast | p95 < 500 ms on the full load |
 | N1.3 | Each module stays inside its boundary (D9, D37) | `ApplicationModules.verify()` passes in `./mvnw test` |
 | N1.4 | Every endpoint has a controller test with the real security configs (D93) | `./mvnw test` is green, with no Docker needed |
-| N1.5 | Every module has an integration test against seed data (Testcontainers) (D93, D99). `vocabulary` is covered by `VocabularyModuleIT` (🔵, not yet run); `names` by `NamesModuleIT` (🔵, not yet run); `kanji` is next | `./mvnw verify` is green on CI |
+| N1.5 | Every module has an integration test against seed data (Testcontainers) (D93, D99). `vocabulary` is covered by `VocabularyModuleIT`, `names` by `NamesModuleIT` and `kanji` by `KanjiModuleIT` (🔵, not yet run) | `./mvnw verify` is green on CI |
 | N1.6 | In production it reads with a read-only ES key as well as the read-only DB role (D23) | An index or delete call with the production key returns 403 |
 | N1.7 | API tasks are stateless, so more of them can run behind a load balancer | Two tasks serve the same results, with no sticky sessions |
 
