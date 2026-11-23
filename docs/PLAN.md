@@ -8,17 +8,17 @@ _Last updated: 2026-11-23_
 
 ## Next session
 
-- **Closes:** R3.2 (name search, blocked by X5), X12 (sentence headwords, unblocks R4.2), N1.5
-  (integration tests for `names`, `vocabulary`, `kanji`) and CI. Updater code is in scope (D96).
-- **Without Docker (→ 🔵):** in the updater, add X5 as `V5__name_search.sql` with an IT assertion
-  that both functions exist, and X12 in the tatoeba spoke (specs in its `docs/PLAN.md`). Here, add
-  `headwords` and `exampleFor` to `docker/elasticsearch/mappings/example-sentence.json` (hand-kept),
-  the Testcontainers setup and the three `*IT` classes, and the CI workflow (D99).
-- **With Docker (→ ✅):** `sh docker/snapshot.sh restore full`, start the updater against it so
-  Flyway applies only V5, re-run the `tatoeba` feed, then `snapshot.sh save` as the new `full`.
-  Add a sentence that marks 食べる with `~` to `SENTENCES` in `generate-seed.py`, regenerate
-  schema and seed, `docker compose down -v && docker compose up -d`, and run `./mvnw verify`.
-- **Commit order:** updater first, then this repo (D96).
+- **Closes:** the Docker half of R3.2, R14.1, R14.8 and N1.5 (all 🔵). The code is built: V5 and
+  X12 in the updater, and here the Testcontainers base, three `*IT` classes, CI and the mapping copy.
+  None of the ITs has run yet. Until `schema.sql` is regenerated, name search still returns 500
+  and `NamesModuleIT` and CI are red.
+- **On a Docker machine:** run the updater's `./mvnw verify` first. Then `sh docker/snapshot.sh
+  restore full` and start the updater against it as the owner, so Flyway applies only V5. Put the
+  `headwords`/`exampleFor` keyword mapping on the existing index (updater CONTEXT.md), re-run the
+  `tatoeba` feed, time name search (R14.1), then `snapshot.sh save` as `full`.
+- **Then seed:** add a full-load sentence that marks 食べる with `~` to `SENTENCES` in
+  `generate-seed.py`, regenerate schema and seed, `docker compose down -v && up -d`, `./mvnw verify`.
+- **Commit order:** updater's `spec/name-search-it` into its `main` first, then this repo's (D96).
 - **After that:** R4.1–R4.4 (sentences, D97, D98). R4.5 waits on R6, so R4 stays 🟡. Then R1.5.
 - **Data:** the dev volumes hold a full load without X5. `docker compose down -v && docker
   compose up -d` gives seed data; `sh docker/snapshot.sh restore full` brings the full load back.
