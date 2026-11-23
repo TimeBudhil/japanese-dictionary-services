@@ -7,6 +7,7 @@ The read-only dictionary API. Its data is written by the updater in
 
 - **Start of a session:** read "Next session" at the top of `docs/PLAN.md`.
 - **How something works** (architecture, data caveats, module conventions, glossary): `docs/CONTEXT.md`.
+- **What the whole app must do** (all four applications): `written_reports/REQUIREMENTS.md`.
 - **Running, loading data, regenerating seed files:** `README.md`.
 - **An id that `docs/PLAN.md` doesn't list, or the user asks about the past:** `docs/HISTORY.md`.
   It is the archive; leave it closed otherwise.
@@ -22,6 +23,15 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 | `docs/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
 | `docs/PLAN.md` | Next session, remaining tasks, decisions in force, open decisions | 12 KB |
 | `docs/HISTORY.md` | Done tasks, superseded decisions, verification notes | none |
+| `written_reports/REQUIREMENTS.md` | App-wide requirements, by application, then In/Stretch/Out/NFR | none |
+
+- **README stays a lightweight index:** how to run, plus a link to every doc with its path.
+  A new doc gets a row in README's docs table.
+- **This repo holds the app-wide docs** (requirements, diagrams) for all four applications (D92).
+- **Requirements name the owning module** of every dictionary-service feature, and the spoke
+  or `hub` for updater features. Change a status tag in the same change as the code.
+- **Built without Docker:** tag the requirement `🔵 built, unverified` until it's checked on
+  seed or full-load data.
 
 - **A fact** about how things work goes to CONTEXT.md. **A task, status or decision** goes to PLAN.md.
 - **Point to the code** for anything it already says (schema, config, versions, class layout):

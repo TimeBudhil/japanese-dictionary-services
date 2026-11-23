@@ -67,11 +67,15 @@ It runs `ddl-auto=validate`, so a schema mismatch fails at startup.
 
 | File | Holds |
 |---|---|
-| `docs/PLAN.md` | Next session, remaining tasks, decisions in force, open decisions |
-| `docs/CONTEXT.md` | How it works: architecture, rules, data caveats, conventions, glossary |
-| `docs/HISTORY.md` | Archive of done work and old decisions. Read only when digging |
-| `CLAUDE.md` | How Claude keeps these docs up to date |
-| `written_reports/` | Hand-drawn diagrams (V03 is current, but it says MySQL; it's Postgres) |
+| [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | Requirements for the **whole app** (front-end, this service, updater, user service), by module |
+| [`docs/PLAN.md`](docs/PLAN.md) | Next session, remaining tasks, decisions in force, open decisions |
+| [`docs/CONTEXT.md`](docs/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
+| [`docs/HISTORY.md`](docs/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
+| [`CLAUDE.md`](CLAUDE.md) | How Claude keeps these docs up to date |
+| [`written_reports/Architectures/`](written_reports/Architectures/) | Hand-drawn container diagrams (V03 is current, but it says MySQL; it's Postgres) |
+| `../japanese-dictionary-updater-component/docs/PLAN.md` | The updater's tasks (`X<n>`) and decisions (`U<n>`) |
+
+This repo is the home of app-wide documents (D92).
 
 Ids in the docs: `D<n>` decision, `O<n>` open decision, `X<n>` a task in the updater repo.
 Search `PLAN.md` for the id; for the full reasoning, search `HISTORY.md`.

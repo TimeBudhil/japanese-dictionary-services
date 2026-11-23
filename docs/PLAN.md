@@ -3,7 +3,7 @@
 What's next, what's left, and the decisions in force. How things work: [`CONTEXT.md`](./CONTEXT.md).
 Done work and old decisions: [`HISTORY.md`](./HISTORY.md) (not read by default).
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-23_
 
 ## Next session
 
@@ -24,7 +24,7 @@ _Last updated: 2026-11-16_
 ## Build order
 
 0 foundation ✅ → 1 vocabulary ✅ → 2 kanji ✅ → 3 names (waits on X5) → 4 sentences →
-5 normalization → 6 parsing → 7 search → 8 lists
+5 normalization → 6 parsing → 7 search → 8 lists → 9 furigana
 
 ## Phase 3 — names
 
@@ -35,6 +35,8 @@ _Last updated: 2026-11-16_
 - [ ] `ExampleSentence` entity + read-only ES document (index `example-sentence`).
 - [ ] `GET /api/v1/sentences/{id}`, `?word=` (by index words), `?q=` (Japanese/English text).
 - [ ] API for `search` and for "example sentences of this word", controller tests.
+- [ ] After Phase 6: sentence detail returns word segments linked to `ent_seq` (R4.5).
+- [ ] `vocabulary`: words containing a given kanji, common first (R1.5).
 
 ## Phase 5 — normalization
 
@@ -56,13 +58,23 @@ Decide O1 first.
 - [ ] Flow: detect input → normalize → deinflect → call each module → rank (D10).
 - [ ] One deterministic ranking: tier (exact > deinflected > prefix > partial) → common/frequency
   → type, adjusted by input type (D17). Plain unit tests for the comparator.
-- [ ] Tag search (POS/misc), details when reached.
+- [ ] Tag search (POS/misc), details when reached. A `tags=` parameter; the front-end turns `#tag` into it (R7.5).
+- [ ] The response reports input type, normalized form and deinflections tried (R7.6).
 
 ## Phase 8 — lists
 
 - [ ] From current data: common words, POS, expressions, slang, kanji by grade/jōyō/JLPT/frequency.
 - [ ] Blocked: subject and dialect lists (X3), words by JLPT (O3, X6).
-- [ ] `GET /api/v1/lists`, `GET /api/v1/lists/{id}`. User-made lists belong to the user service.
+- [ ] `GET /api/v1/lists`, `GET /api/v1/lists/{id}`. User-made lists live on the device (D94).
+- [ ] Word of the day: `GET /api/v1/lists/word-of-the-day` (R10).
+
+## Phase 9 — furigana
+
+- [ ] Furigana segments on vocab and sentence detail, from the updater's JmdictFurigana spoke (R9, R14.7).
+
+## Testing
+
+- [ ] An integration test per module against seed data (Testcontainers), run by CI (D93). Needs Docker.
 
 ## Waiting on the updater
 
@@ -97,7 +109,6 @@ Full reasoning for each id: `HISTORY.md`.
 | D17 | `search` ranks with its own tier rules; ES scores aren't comparable across indexes |
 | D18 | Names stay in Postgres only |
 | D20 | REST under `/api/v1`, OpenAPI, page/size paging |
-| D22 | Tests now: controller tests + Modulith. Integration tests later |
 | D23 | Read-only database role (and read-only ES key in production) |
 | D25 | No shared module. App-level pieces in the root package; each module owns its security chain and CORS |
 | D27 | Connection settings are env vars with local defaults; the `prod` profile has none |
@@ -129,6 +140,9 @@ Full reasoning for each id: `HISTORY.md`.
 | D89 | Radical search filters: `strokes` (exact), `grade`, `joyo`, combined with AND |
 | D90 | Name search tiers: exact (writing, reading or whole translation, any case) > prefix > a later translation word starts with q; then by id; no retired names (was O15) |
 | D91 | Name search queries call the updater's X5 functions; the updater adds them first, this service never creates database objects |
+| D92 | This repo holds the app-wide docs: `written_reports/REQUIREMENTS.md` and the diagrams, for all four applications. Per-repo decisions stay in each repo; the updater links here |
+| D93 | Tests: controller tests + Modulith, and an integration test per module against seed data (Testcontainers), run by CI (replaces D22; requirement N1.5) |
+| D94 | User lists, search history and Anki/CSV/TSV import and export live in the front-end, on the device. The user service (accounts, sync) is Stretch |
 
 ## Open decisions
 
@@ -137,12 +151,12 @@ Full reasoning for each id: `HISTORY.md`.
 | O1 | Tokenizer / deinflection library | Lucene Kuromoji + a rule-based deinflector | Phase 6 |
 | O2 | Normalization: own code or a library | Own, table-driven, unit-tested | Phase 5 |
 | O3 | Word-level JLPT source (no official list exists) | A community list; needs an updater spoke (X6) | Phase 8 |
-| O4 | Deployment: hosting, hosted ES (must speak 9.x), CI/CD, tracing | Decide with the updater | First deploy |
+| O4 | Deployment: hosting, hosted ES (must speak 9.x), CI/CD, tracing. Tentative budget $100–200/month | Decide with the updater | After every app runs in a container |
 
 ## Later
 
 - Radical picker: grey out radicals that can't combine with the selection (`/radicals?selected=…`).
-- Integration tests (Testcontainers + seed data), JPA/ES slice tests.
+- JPA/ES slice tests.
 - Modules from diagram V03: OCR, slang, kanji mastery map, word of the day, furigana, handwriting search.
 - Unsourced data ideas (see `written_reports/Archived/`): pitch accent, frequency, grammar points, audio.
 - Link `example_sentence.index_words` to vocab ids (in the updater).

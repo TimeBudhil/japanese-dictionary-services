@@ -3,7 +3,7 @@
 How the service works and the rules it follows: only what the code can't tell you.
 Tasks and decisions: [`PLAN.md`](./PLAN.md). Running it: [`README.md`](../README.md).
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-23_
 
 ## The application
 
@@ -13,8 +13,8 @@ A jisho.org-style Japanese dictionary, with learning features later. One repo pe
 |---|---|---|---|
 | `../japanese-dictionary-updater-component` | **Updater**: scheduled import of upstream dictionary files | Postgres + ES | upstream files |
 | this repo | **Dictionary service**: the read-only API | nothing | Postgres + ES |
-| _future_ user service | Lists, history, Anki/CSV import/export | its own store | this API |
-| _future_ front-end | Web/mobile UI | — | this API |
+| _future_ user service | Stretch: accounts and syncing lists across devices (D94) | its own store | this API |
+| _future_ front-end | Web UI; user lists, history, import/export on the device (D94) | browser storage | this API |
 
 **Hard rules**
 - The updater is the only writer of dictionary data. This service connects with a read-only role.

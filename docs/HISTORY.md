@@ -291,3 +291,32 @@ Verified on the full load with the spec SQL applied: 田中 → 475 hits, 田中
 404 work. Then `snapshot.sh restore full`; the dev DB has no X5 objects. X8 for names was also
 answered by reading the updater's `JmnedictParser`: `keb`/`reb`/`trans_det` are appended in file
 order and repeated name types keep the first occurrence.
+
+## 2026-11-23 — App-wide requirements written
+
+`written_reports/REQUIREMENTS.md` was written with `/grill-requirements`, covering all four
+applications (front-end, this service, updater, user service).
+
+Superseded:
+- | D22 | Tests now: controller tests + Modulith. Integration tests later |
+
+Decisions:
+- **D92 — where app-wide docs live.** Options offered: this repo (advised), the updater, or a new
+  umbrella docs repo. Chosen: this repo, since `written_reports/` already held the app-wide
+  diagrams. Per-repo decisions (D/U) stay where they are; the updater's CLAUDE.md should link here.
+- **D93 (replaces D22) — integration tests required.** Options offered: Stretch (advised, kept
+  D22), In-Scope NFR, or Out-of-Scope. Chosen: In-Scope NFR (requirement N1.5).
+
+Second round (same day), after pulling the updater:
+- **D94 — lists on the device.** The user asked whether lists could live on the device instead of
+  in the user service. Options offered: local-first with sync later (advised), local plus accounts
+  now, or server only. Chosen: local-first. Lists, history, and Anki/CSV/TSV import and export
+  move to the front-end. The user service and learner Cognito accounts become Stretch (S22).
+- **O4 deferred.** A budget under $50/month was first chosen, which doesn't fit Elastic Cloud plus
+  Fargate. Options offered: one EC2 box with Compose (advised), drop ES, or raise the budget. The
+  user deferred hosting until every app runs in a container, keeping $100–200/month as a
+  tentative budget.
+- Other answers, recorded in REQUIREMENTS.md: JmdictFurigana spoke for furigana; tag search as
+  both `tags=` and `#tag`; search on Enter only; English-only UI; Anki fields configurable per
+  entry type; lists hold all four entry types; four cross-links; empty results explain the
+  interpretation; list caps 100 × 5,000; import cap 5 MB / 5,000 rows.
