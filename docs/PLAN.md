@@ -8,25 +8,26 @@ _Last updated: 2026-11-23_
 
 ## Next session
 
-- **Where we are:** Phases 0–2 are done. Phase 3 (names) is built and tested (`./mvnw test`
-  green, 57 tests) but its search needs the updater's X5 migration: until then
-  `GET /api/v1/names?q=` returns 500. Detail by id works today.
-- **X5 is specified** word for word in the updater's `docs/PLAN.md` (pg_trgm, two functions, two
-  indexes). It was tested by hand on the full load (3–40 ms per search, a lone kana ~200 ms),
-  then the `full` snapshot was restored, so the dev DB has no X5 objects.
-- **Next:** implement X5 in the updater, run `sh docker/generate-schema.sh`, `docker compose down
-  -v && docker compose up -d`, and check `GET /api/v1/names?q=田中` on seed data. Take a new
-  full-load snapshot afterwards (the schema changed). That closes Phase 3; then Phase 4.
-- **X8 is answered for names too:** the parser appends `keb`/`reb`/`trans_det` in file order and
-  keeps the first of each repeated name type. Tell the updater; only X3's future tables remain.
-- **Data:** the dev volumes hold a full load. `docker compose down -v && docker compose up -d`
-  gives seed data; `sh docker/snapshot.sh restore full` brings the full load back.
+- **Closes:** R3.2 (name search, blocked by X5), X12 (sentence headwords, unblocks R4.2), N1.5
+  (integration tests for `names`, `vocabulary`, `kanji`) and CI. Updater code is in scope (D96).
+- **Without Docker (→ 🔵):** in the updater, add X5 as `V5__name_search.sql` with an IT assertion
+  that both functions exist, and X12 in the tatoeba spoke (specs in its `docs/PLAN.md`). Here, add
+  `headwords` and `exampleFor` to `docker/elasticsearch/mappings/example-sentence.json` (hand-kept),
+  the Testcontainers setup and the three `*IT` classes, and the CI workflow (D99).
+- **With Docker (→ ✅):** `sh docker/snapshot.sh restore full`, start the updater against it so
+  Flyway applies only V5, re-run the `tatoeba` feed, then `snapshot.sh save` as the new `full`.
+  Add a sentence that marks 食べる with `~` to `SENTENCES` in `generate-seed.py`, regenerate
+  schema and seed, `docker compose down -v && docker compose up -d`, and run `./mvnw verify`.
+- **Commit order:** updater first, then this repo (D96).
+- **After that:** R4.1–R4.4 (sentences, D97, D98). R4.5 waits on R6, so R4 stays 🟡. Then R1.5.
+- **Data:** the dev volumes hold a full load without X5. `docker compose down -v && docker
+  compose up -d` gives seed data; `sh docker/snapshot.sh restore full` brings the full load back.
 
 ## Build order
 
-0 foundation ✅ → 1 vocabulary R1 ✅ → 2 kanji R2 ✅ → 3 names R3 (waits on X5) → 4 sentences R4 →
-5 normalization R5 → 6 parsing R6 → 7 search R7 → 8 lists R8, R10 → 9 furigana R9.
-Each phase's tasks, blockers (`X<n>`, `O<n>`) and status are its rows in REQUIREMENTS.md.
+Done: R11 (platform), R1 (except R1.4, R1.5), R2, R3.1. Next, in order: R3.2 → R4.1–R4.4 → R1.5 →
+R5 → R6 (+ R4.5) → R7 → R8, R10 → R9. Blockers (`X<n>`, `O<n>`) and status are on the rows in
+REQUIREMENTS.md.
 
 ## Decisions in force
 
@@ -83,12 +84,16 @@ Full reasoning for each id: `HISTORY.md`.
 | D93 | Tests: controller tests + Modulith, and an integration test per module against seed data (Testcontainers), run by CI (replaces D22; requirement N1.5) |
 | D94 | User lists, search history and Anki/CSV/TSV import and export live in the front-end, on the device. The user service (accounts, sync) is Stretch |
 | D95 | REQUIREMENTS.md rows are the task list (status tags track progress); PLAN.md keeps only Next session, build order and decisions. Specs live in `written_reports/specs/`, gitignored |
+| D96 | Updater code may change when an R row here needs it: tracked by its `X<n>`, committed in the updater first, D3 and D91 still hold. Its mirror is the updater's U18 |
+| D97 | `sentences?word=` matches the headword only, through X12's ES arrays; order: `exampleFor` first, then shorter sentence, then id. Callers try a word's writings, then readings |
+| D98 | Sentence detail returns retired sentences unchanged and leaves out raw `index_words`. Text search uses ES default analyzers until X2: `match_phrase` on Japanese, `match` on English, then by id |
+| D99 | Integration tests are `*IT`, run by Failsafe in `./mvnw verify` only; single Postgres and ES containers load the same `docker/` seed files; a minimal GitHub Actions workflow runs `./mvnw verify` |
 
 ## Open decisions
 
 | # | Question | Advice | When |
 |---|---|---|---|
-| O1 | Tokenizer / deinflection library | Lucene Kuromoji + a rule-based deinflector | Phase 6 |
-| O2 | Normalization: own code or a library | Own, table-driven, unit-tested | Phase 5 |
-| O3 | Word-level JLPT source (no official list exists) | A community list; needs an updater spoke (X6) | Phase 8 |
+| O1 | Tokenizer / deinflection library | Lucene Kuromoji + a rule-based deinflector | Before R6 |
+| O2 | Normalization: own code or a library | Own, table-driven, unit-tested | Before R5 |
+| O3 | Word-level JLPT source (no official list exists) | A community list; needs an updater spoke (X6) | Before R8.4 |
 | O4 | Deployment: hosting, hosted ES (must speak 9.x), CI/CD, tracing. Tentative budget $100–200/month | Decide with the updater | After every app runs in a container |

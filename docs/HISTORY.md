@@ -402,3 +402,39 @@ Decision:
   obsolete. Options offered: slim it (advised), delete it (decisions into REQUIREMENTS.md), or
   keep it. Chosen: slim. REQUIREMENTS.md is read by section only. Specs go to
   `written_reports/specs/`, gitignored.
+
+## 2026-11-23 — Scope of the next two sessions (D96–D99)
+
+A grilling session on "Next session" and the session after it. No code changed; this session
+had no Docker.
+
+Found: no integration test exists, though D93 and N1.5 require one per module and R1 and R2
+are ✅. The updater's "Next session" was stale (X8 open, "next phase (kanji)"). In ES,
+`example-sentence.indexWords` is a single keyword and `example_sentence.index_words` has no
+index, so R4.2 had nothing efficient to query. There was no CI. "Phase" survived only in the
+two PLAN.md files (10 mentions); phase N equalled RN except phase 0 (now R11) and phase 8
+(R8 + R10), so phases were dropped for R-ids.
+
+Decisions:
+- **D96 — updater changes allowed.** Before this, updater work was parked as an `X<n>` spec
+  and done later, which left `/names?q=` returning 500 for a week. Pros: no blocked rows, both
+  sides tested together, specs can't drift. Cons: two commits per unit (drift if only one
+  lands), more snapshot rebuilds, blurred ownership, two rule sets at once. Guardrails chosen:
+  only when an R row needs it, tracked by `X<n>`, the updater committed first, D3 and D91
+  still hold.
+- **D97 — sentence word search.** Options: (a) a Postgres regex over `index_words`, unindexed,
+  about 150k rows; (b) the updater parses `index_words` into ES keyword arrays (X12). Chosen
+  (b): parsing the source format is the updater's job, like D14. It matches the headword only;
+  callers try the entry's writings, then readings. Order: `~` (Tatoeba's checked good example)
+  first, then shorter sentences (easier for learners), then id.
+- **D98 — sentence detail and text search.** Retired sentences are returned by id like D76.
+  Raw `index_words` stays out of the response; R4.5 will add segments. Text search ships on the
+  default analyzers now, with match quality left to X2.
+- **D99 — integration tests.** `*IT` under Failsafe keeps `./mvnw test` Docker-free (N1.4).
+  The containers load the same `docker/` seed files, so seed data has one source (D59), not
+  test-only fixtures. Single containers, not the compose file. A minimal GitHub Actions
+  workflow now; deployment stays with O4.
+
+Small choices agreed: the X5 migration goes onto the restored `full` snapshot in place (Flyway
+applies only V5), then it is saved as the new `full`; it is a one-off, so not in README. One new
+seed sentence marked `~` for 食べる tests D97's order.

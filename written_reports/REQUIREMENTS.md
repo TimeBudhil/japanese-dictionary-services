@@ -92,9 +92,9 @@ databases and never call each other.
 
 | ID | Requirement | Acceptance criterion | Status |
 |----|-------------|----------------------|--------|
-| R4.1 | `GET /api/v1/sentences/{id}` returns a Japanese sentence with its English translation | Seed sentence 170682 returns 200. An unknown id returns 404 | `⬜` |
-| R4.2 | `GET /api/v1/sentences?word=` returns sentences whose index words contain that headword, paged | `word=食べる` returns only sentences that list 食べる in `index_words` | `⬜` |
-| R4.3 | `GET /api/v1/sentences?q=` searches the Japanese or English text in ES, paged, with no retired sentences | `q=eat` returns sentences whose English contains "eat" | `⬜` (match quality needs X2) |
+| R4.1 | `GET /api/v1/sentences/{id}` returns a Japanese sentence with its English translation, without the raw `index_words`. Retired sentences are returned unchanged (D98) | Seed sentence 170682 returns 200. An unknown id returns 404 | `⬜` |
+| R4.2 | `GET /api/v1/sentences?word=` returns sentences whose index words contain that headword, paged. Sentences marked as a good example of the word (`~`) come first, then shorter ones, then by id (D97) | `word=食べる` returns only sentences that list 食べる in `index_words`, with the seed sentence marked `~` first | `⬜` blocked by X12 |
+| R4.3 | `GET /api/v1/sentences?q=` searches the Japanese or English text in ES, paged, with no retired sentences. Until X2 it uses the default analyzers (D98) | `q=eat` returns sentences whose English contains "eat" | `⬜` (match quality needs X2) |
 | R4.4 | `SentencesApi` exposes both searches to `search` and for "example sentences of this word" | `ApplicationModules.verify()` passes, and `search` uses only `SentencesApi` | `⬜` |
 | R4.5 | Sentence detail returns its words as segments, each linked to a vocab `ent_seq` when one matches (uses `ParsingApi` R6.3 and `VocabularyApi`) | Every segment of seed sentence 170682 that is a dictionary word carries an `ent_seq` | `⬜` needs R6 |
 
@@ -198,7 +198,7 @@ databases and never call each other.
 | N1.2 | Detail endpoints are at least as fast | p95 < 500 ms on the full load |
 | N1.3 | Each module stays inside its boundary (D9, D37) | `ApplicationModules.verify()` passes in `./mvnw test` |
 | N1.4 | Every endpoint has a controller test with the real security configs (D93) | `./mvnw test` is green, with no Docker needed |
-| N1.5 | Every module has an integration test against seed data (Testcontainers) (D93) | `./mvnw verify` is green on CI |
+| N1.5 | Every module has an integration test against seed data (Testcontainers) (D93, D99). None exist yet; `names`, `vocabulary` and `kanji` are next | `./mvnw verify` is green on CI |
 | N1.6 | In production it reads with a read-only ES key as well as the read-only DB role (D23) | An index or delete call with the production key returns 403 |
 | N1.7 | API tasks are stateless, so more of them can run behind a load balancer | Two tasks serve the same results, with no sticky sessions |
 
@@ -236,9 +236,10 @@ databases and never call each other.
 | R14.2 | X2 (`jmdict`, `tatoeba`): kuromoji + ICU multi-fields, plus a keyword subfield on `glosses`, for R1.4 and R4.3 | The ES mapping has the fields, and an exact gloss query matches | `⬜` |
 | R14.3 | X3 (`jmdict`): store `<field>` and `<dial>` tags with order columns, for R8.3 | Rows exist after a re-import, in JMdict order | `⬜` |
 | R14.4 | X6 (new spoke): word-level JLPT, for R8.4 | Vocab rows carry a JLPT level from the chosen list | `⬜` blocked by O3 |
-| R14.5 | X8: keep upstream order for X3's new tables | Order columns exist | `🟡` (kanji and names checked) |
+| R14.5 | X8: keep upstream order for X3's new tables | Order columns exist | `✅` kanji and names checked; X3's tables get order columns as part of R14.3 |
 | R14.6 | X10 (`jmdict`): store POS and misc as JMdict codes, for R7.5 | Rows hold `n`, `v1`, not expanded text | `⬜` decision pending |
 | R14.7 | New spoke `furigana`: import JmdictFurigana, keyed by `ent_seq` plus the writing and reading, for R9 | Every common vocab writing that contains kanji has segments | `⬜` (licence check against U12 first) |
+| R14.8 | X12 (`tatoeba`): `headwords` and `exampleFor` keyword arrays on the `example-sentence` document, parsed from `index_words`, for R4.2 (D97) | Seed sentence 170682 has `headwords` 最近, 猫, は, 鼠, を, 食べる | `⬜` |
 
 #### R15: Deployment `⬜` · all backend repos · hosting deferred until everything is containerized (O4)
 

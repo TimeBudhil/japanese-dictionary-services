@@ -26,7 +26,7 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 | `written_reports/REQUIREMENTS.md` | App-wide requirements; its rows and status tags are the task list (D95) | none |
 | `docs/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
 | `docs/HISTORY.md` | Done work, superseded decisions, verification notes. Append-only | none |
-| `written_reports/specs/` | Specs for work in progress. Gitignored, never committed | none |
+| `written_reports/specs/` | Specs for work in progress, one `<YYYY-MM-DD>-<name>/` folder each with `spec.md` and `issues/`. Gitignored, never committed | none |
 
 ## Keeping the docs current
 
@@ -42,8 +42,8 @@ Update the docs in the same change as the code. After any change, apply every ro
 | You learn how something works, or a data caveat | CONTEXT.md |
 | Run steps, ports, scripts or seed files change | README.md "Run it" |
 | A new doc or folder | A row in README.md "The docs", and a return step if a returning reader needs it |
-| This repo needs updater work | An `X<n>` in the updater's PLAN.md, and "blocked by X<n>" on the requirement here |
-| A spec is written | `written_reports/specs/<component>.md` |
+| This repo needs updater work | An `X<n>` in the updater's PLAN.md, and "blocked by X<n>" on the requirement here. Build it in the same session when the row needs it (D96) |
+| A spec is written | `written_reports/specs/<YYYY-MM-DD>-<name>/spec.md`, with its tickets in `issues/<NN>-<slug>.md` beside it |
 | A session ends | Rewrite PLAN.md "Next session" (15 lines max) so the next session can start from it alone |
 
 Bump `_Last updated_` in each doc you change.
@@ -59,6 +59,7 @@ Bump `_Last updated_` in each doc you change.
 - **Write sentences that read on their own.** Ids go at the end as a reference, like "(D12)".
 - **Cross-repo decisions** live in the repo whose code or data they change; the other links to it.
 - **Code comments** explain only what the code can't: a non-obvious reason or a gotcha.
+- **No phases.** Name work by its R-ids; "Next session" says which R-ids it closes.
 
 ## Working
 

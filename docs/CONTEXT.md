@@ -54,7 +54,8 @@ What they don't show:
   JMdict `<field>` and `<dial>` tags are not stored (X3).
 - `reading.kanji`: true = kanji writing (keb), false = kana reading (reb).
 - `example_sentence.id` is the Japanese Tatoeba id. `index_words` is a space-separated list of
-  headwords, a loose link to vocab with no foreign key.
+  headwords, a loose link to vocab with no foreign key. In ES, `indexWords` is one keyword (the
+  whole string), so `word=` search needs X12's `headwords` array (D97).
 - **Kanji.** Arrays are in KanjiDic2 / KanjiVG order. Every jōyō kanji has stroke paths.
   `codepoint` hex is mixed case as KanjiDic2 gives it (`732b`, `342E`); it is returned as stored.
 - **Bare rows** come from KanjiVG: stroke paths only, no KanjiDic2 data and no radicals. 21 are
