@@ -22,7 +22,7 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 |---|---|---|
 | `CLAUDE.md` | These rules and pointers | 80 lines |
 | `README.md` | Index of the docs, return steps, how to run | 100 lines |
-| `docs/PLAN.md` | Next session, build order, decisions in force, open decisions | 8 KB |
+| `docs/PLAN.md` | Next session, Docker session, build order, decisions in force, open decisions | 8 KB |
 | `written_reports/REQUIREMENTS.md` | App-wide requirements; its rows and status tags are the task list (D95) | none |
 | `docs/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
 | `docs/HISTORY.md` | Done work, superseded decisions, verification notes. Append-only | none |
@@ -44,6 +44,7 @@ Update the docs in the same change as the code. After any change, apply every ro
 | A new doc or folder | A row in README.md "The docs", and a return step if a returning reader needs it |
 | This repo needs updater work | An `X<n>` in the updater's PLAN.md, and "blocked by X<n>" on the requirement here. Build it in the same session when the row needs it (D96) |
 | A spec is written | `written_reports/specs/<YYYY-MM-DD>-<name>/spec.md`, with its tickets in `issues/<NN>-<slug>.md` beside it |
+| A step needs Docker and this machine has none | Add it to PLAN.md "Docker session"; the row stays 🔵 (D100) |
 | A session ends | Rewrite PLAN.md "Next session" (15 lines max) so the next session can start from it alone |
 
 Bump `_Last updated_` in each doc you change.

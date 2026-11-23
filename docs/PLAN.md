@@ -8,24 +8,27 @@ _Last updated: 2026-11-23_
 
 ## Next session
 
-- **Closes:** the Docker half of R3.2, R14.1, R14.8 and N1.5 (all 🔵). The code is built: V5 and
-  X12 in the updater, and here the Testcontainers base, three `*IT` classes, CI and the mapping copy.
-  None of the ITs has run yet. Until `schema.sql` is regenerated, name search still returns 500
-  and `NamesModuleIT` and CI are red.
-- **On a Docker machine:** run the updater's `./mvnw verify` first. Then `sh docker/snapshot.sh
-  restore full` and start the updater against it as the owner, so Flyway applies only V5. Put the
-  `headwords`/`exampleFor` keyword mapping on the existing index (updater CONTEXT.md), re-run the
-  `tatoeba` feed, time name search (R14.1), then `snapshot.sh save` as `full`.
-- **Then seed:** add a full-load sentence that marks 食べる with `~` to `SENTENCES` in
-  `generate-seed.py`, regenerate schema and seed, `docker compose down -v && up -d`, `./mvnw verify`.
-- **Commit order:** updater's `spec/name-search-it` into its `main` first, then this repo's (D96).
-- **After that:** R4.1–R4.4 (sentences, D97, D98). R4.5 waits on R6, so R4 stays 🟡. Then R1.5.
-- **Data:** the dev volumes hold a full load without X5. `docker compose down -v && docker
-  compose up -d` gives seed data; `sh docker/snapshot.sh restore full` brings the full load back.
+- **Closes:** R4.1–R4.4 (sentences, D97, D98), with `SentencesModuleIT`. Without Docker
+  they reach 🔵 and add their Docker steps below. R4.5 waits on R6, so R4 stays 🟡.
+- **Seed gap:** no seed sentence has `~` before Docker step 3, so R4.2's order is untested on seed.
+- **After that:** R1.5.
+
+## Docker session
+
+Docker-only steps saved up while working without it (D100). On a Docker machine do them in
+order, mark the rows ✅, empty the list. Now: the volumes hold a full load without X5;
+name search returns 500 and CI is red until step 3.
+1. Updater: `./mvnw verify` (X5 and X12 ITs never ran).
+2. `sh docker/snapshot.sh restore full`, start the updater on it as the owner (Flyway applies only
+   V5), put the `headwords`/`exampleFor` keyword mapping on the existing index (updater
+   CONTEXT.md), re-run the `tatoeba` feed, time name search (R14.1), `snapshot.sh save` as `full`.
+3. Add a full-load sentence that marks 食べる with `~` to `SENTENCES` in `generate-seed.py`,
+   regenerate schema and seed, `docker compose down -v && docker compose up -d`.
+4. Here: `./mvnw verify`, then push for CI. Closes R3.2, R14.1, R14.8, N1.5.
 
 ## Build order
 
-Done: R11 (platform), R1 (except R1.4, R1.5), R2, R3.1. Next, in order: R3.2 → R4.1–R4.4 → R1.5 →
+Done: R11 (platform), R1 (except R1.4, R1.5), R2, R3 (R3.2 🔵). Next, in order: R4.1–R4.4 → R1.5 →
 R5 → R6 (+ R4.5) → R7 → R8, R10 → R9. Blockers (`X<n>`, `O<n>`) and status are on the rows in
 REQUIREMENTS.md.
 
@@ -88,6 +91,7 @@ Full reasoning for each id: `HISTORY.md`.
 | D97 | `sentences?word=` matches the headword only, through X12's ES arrays; order: `exampleFor` first, then shorter sentence, then id. Callers try a word's writings, then readings |
 | D98 | Sentence detail returns retired sentences unchanged and leaves out raw `index_words`. Text search uses ES default analyzers until X2: `match_phrase` on Japanese, `match` on English, then by id |
 | D99 | Integration tests are `*IT`, run by Failsafe in `./mvnw verify` only; single Postgres and ES containers load the same `docker/` seed files; a minimal GitHub Actions workflow runs `./mvnw verify` |
+| D100 | Work without Docker goes on to 🔵; its Docker-only steps collect in PLAN.md "Docker session", done in one sitting on a Docker machine |
 
 ## Open decisions
 

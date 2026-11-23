@@ -438,3 +438,11 @@ Decisions:
 Small choices agreed: the X5 migration goes onto the restored `full` snapshot in place (Flyway
 applies only V5), then it is saved as the new `full`; it is a one-off, so not in README. One new
 seed sentence marked `~` for 食べる tests D97's order.
+
+## 2026-11-23 — D100: a standing "Docker session" list
+
+This machine has no Docker, so the name-search and integration-test work stopped at 🔵 with its
+Docker steps left over. Options were to keep those steps in "Next session" (which blocks the next
+codeable work behind a machine change), a separate doc (one more file with its own budget), or a
+standing section in PLAN.md. Chosen: the section. "Next session" moves on to codeable work, and
+each Docker-only step is added to "Docker session" until a Docker machine clears them in one go.
