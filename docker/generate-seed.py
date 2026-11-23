@@ -1,7 +1,7 @@
 """Regenerates the committed seed data from a full-load dev stack (D19, D32).
 
 Prerequisite: this repo's stack is up in empty mode and the updater has run a full
-load into it (see docs/CONTEXT.md, "Running locally"; D74). The script copies
+load into it (see written_reports/CONTEXT.md, "Running locally"; D74). The script copies
 a fixed list of real rows out of that stack, so the seed always matches the
 updater's real schema and data shapes:
 

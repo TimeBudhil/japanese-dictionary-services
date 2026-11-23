@@ -6,12 +6,12 @@ The read-only dictionary API. Its data is written by the updater in
 ## Reading
 
 Read as little as the task needs.
-- **Start of a session:** "Next session" at the top of `docs/PLAN.md`.
+- **Start of a session:** "Next session" at the top of `written_reports/PLAN.md`.
 - **What to build:** `written_reports/REQUIREMENTS.md`, **only the section or R-IDs** for the
   task (grep the id). Never read the whole file.
-- **How something works** (architecture, data caveats, module conventions): `docs/CONTEXT.md`.
+- **How something works** (architecture, data caveats, module conventions): `written_reports/CONTEXT.md`.
 - **Running, loading data, regenerating seed files:** `README.md`.
-- **An id PLAN.md doesn't list, or the user asks about the past:** `docs/HISTORY.md`, by grep
+- **An id PLAN.md doesn't list, or the user asks about the past:** `written_reports/HISTORY.md`, by grep
   only. It is the archive; leave it closed otherwise.
 
 ## The docs
@@ -22,10 +22,10 @@ One purpose per file, each with a budget. Before adding past a budget, cut first
 |---|---|---|
 | `CLAUDE.md` | These rules and pointers | 80 lines |
 | `README.md` | Index of the docs, return steps, how to run | 100 lines |
-| `docs/PLAN.md` | Next session, Docker session, build order, decisions in force, open decisions | 10 KiB |
+| `written_reports/PLAN.md` | Next session, Docker session, build order, decisions in force, open decisions | 10 KiB |
 | `written_reports/REQUIREMENTS.md` | App-wide requirements; its rows and status tags are the task list (D95) | none |
-| `docs/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
-| `docs/HISTORY.md` | Done work, superseded decisions, verification notes. Append-only | none |
+| `written_reports/CONTEXT.md` | What the code can't say: why, rules, caveats | 8 KB |
+| `written_reports/HISTORY.md` | Done work, superseded decisions, verification notes. Append-only | none |
 | `written_reports/specs/` | Specs for work in progress, one `<YYYY-MM-DD>-<name>/` folder each with `spec.md` and `issues/`. Gitignored, never committed | none |
 
 ## Keeping the docs current

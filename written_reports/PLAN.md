@@ -1,7 +1,7 @@
 # japanese-dictionary-services — Plan
 
 What's next and the decisions in force. What's left is the ⬜/🟡/🔵 rows of
-[`REQUIREMENTS.md`](../written_reports/REQUIREMENTS.md) (D95). How things work: [`CONTEXT.md`](./CONTEXT.md).
+[`REQUIREMENTS.md`](./REQUIREMENTS.md) (D95). How things work: [`CONTEXT.md`](./CONTEXT.md).
 Done work and old decisions: [`HISTORY.md`](./HISTORY.md) (not read by default).
 
 _Last updated: 2026-11-23_
@@ -94,6 +94,7 @@ Full reasoning for each id: `HISTORY.md`.
 | D99 | Integration tests are `*IT`, run by Failsafe in `./mvnw verify` only; single Postgres and ES containers load the same `docker/` seed files; a minimal GitHub Actions workflow runs `./mvnw verify` |
 | D100 | Work without Docker goes on to 🔵; its Docker-only steps collect in PLAN.md "Docker session", done in one sitting on a Docker machine |
 | D101 | The five-step build order in "Build order" |
+| D102 | `PLAN.md`, `CONTEXT.md` and `HISTORY.md` live in `written_reports/` with `REQUIREMENTS.md`; there is no `docs/` folder |
 
 ## Open decisions
 

@@ -2,7 +2,7 @@
 
 The requirements for the **whole application**: all four applications, not just this repo.
 This file is the authority for app-wide requirements (D92). Per-repo decisions stay in each repo's
-`docs/PLAN.md` (`D<n>` here, `U<n>` in the updater).
+`written_reports/PLAN.md` (`D<n>` here, `U<n>` in the updater).
 
 _Last updated: 2026-11-23_
 
@@ -51,7 +51,7 @@ databases and never call each other.
   (package `baddee.japanese_dictionary_services.<module>`; `root` = the root package). For the
   updater, the spoke or `hub`.
 - **Blocked by:** an updater task (`X<n>`, in the updater's `docs/PLAN.md`) or an open decision
-  (`O<n>`, in this repo's `docs/PLAN.md`).
+  (`O<n>`, in this repo's `written_reports/PLAN.md`).
 - **IDs:** `R` in scope, `S` stretch, `OUT` out of scope (not `X`, which already names updater
   tasks), `N` non-functional. Numbers are unique across the whole file and permanent. A moved
   requirement keeps its ID.
@@ -474,4 +474,4 @@ _Skipped areas:_
 - **JmdictFurigana licence and format**: check it against U12 before R14.7.
 - **Front-end framework:** React is assumed. Confirm when the repo is created.
 - **O1** (tokenizer), **O2** (normalization), **O3** (JLPT source), **X10** (POS codes): already
-  open in `docs/PLAN.md` and the updater's PLAN.
+  open in `written_reports/PLAN.md` and the updater's PLAN.

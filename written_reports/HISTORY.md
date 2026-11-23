@@ -457,3 +457,10 @@ normalization and parsing before sentences join it. Gaps placed by Claude and ac
 step 2, X2 before step 3, R9 after step 4, R15.1 and N1.1–N1.2 in step 5. Implementation
 decisions (O1, O2, X10, O3, O4) are left to their own sessions. PLAN.md's budget went from 8 KB
 to 10 KiB.
+
+## 2026-11-23 — D102: docs moved to `written_reports/`
+
+At the user's request, `docs/PLAN.md`, `docs/CONTEXT.md` and `docs/HISTORY.md` moved into
+`written_reports/`, so every written doc of this repo is in one folder beside `REQUIREMENTS.md`.
+References in `CLAUDE.md`, `README.md`, the compose file, `generate-seed.py`, `REQUIREMENTS.md`
+and the updater's README and PLAN were updated. Older entries in this file keep the old paths.

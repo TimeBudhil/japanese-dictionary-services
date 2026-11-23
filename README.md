@@ -8,11 +8,11 @@ Spring Boot modular monolith. All dictionary data is written by a separate repo,
 
 | File | Holds |
 |---|---|
-| [`docs/PLAN.md`](docs/PLAN.md) | **Start here.** Next session, build order, decisions in force, open decisions |
+| [`written_reports/PLAN.md`](written_reports/PLAN.md) | **Start here.** Next session, build order, decisions in force, open decisions |
 | [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md) | What the **whole app** must do, by module. Its rows and status tags are the task list. Read one section at a time |
 | `written_reports/specs/` | Specs and their tickets for work in progress, one dated folder per session. Local only (gitignored) |
-| [`docs/CONTEXT.md`](docs/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
-| [`docs/HISTORY.md`](docs/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
+| [`written_reports/CONTEXT.md`](written_reports/CONTEXT.md) | How it works: architecture, rules, data caveats, conventions, glossary |
+| [`written_reports/HISTORY.md`](written_reports/HISTORY.md) | Archive of done work and old decisions. Read only when digging |
 | [`CLAUDE.md`](CLAUDE.md) | Rules, including "Keeping the docs current": which doc each kind of change updates |
 | [`written_reports/Architectures/`](written_reports/Architectures/) | Hand-drawn container diagrams (V03 is current, but it says MySQL; it's Postgres) |
 | `../japanese-dictionary-updater-component/docs/PLAN.md` | The updater's tasks (`X<n>`) and decisions (`U<n>`) |
@@ -26,7 +26,7 @@ search `HISTORY.md`.
 
 ## Coming back after a while
 
-1. Read **"Next session"** at the top of [`docs/PLAN.md`](docs/PLAN.md). It says where things
+1. Read **"Next session"** at the top of [`written_reports/PLAN.md`](written_reports/PLAN.md). It says where things
    stand and what to do first.
 2. Check both repos are clean and up to date: `git status` and `git pull` here and in
    `../japanese-dictionary-updater-component`. The updater must sit next to this repo; the
@@ -35,7 +35,7 @@ search `HISTORY.md`.
    [`written_reports/REQUIREMENTS.md`](written_reports/REQUIREMENTS.md): its module, status
    (`🔵` = built without Docker, not yet checked on data) and acceptance criterion.
 4. Start the stack and run the app (next section).
-5. When you need to know how something works, read [`docs/CONTEXT.md`](docs/CONTEXT.md).
+5. When you need to know how something works, read [`written_reports/CONTEXT.md`](written_reports/CONTEXT.md).
 
 ## Run it
 

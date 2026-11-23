@@ -4,7 +4,7 @@
 #
 # Seed mode (default): schema + seed data. Empty mode for a full load (D74):
 #   docker compose down -v && DICTIONARY_SEED=false docker compose up -d
-# then run the updater against it (docs/CONTEXT.md, "Running locally").
+# then run the updater against it (written_reports/CONTEXT.md, "Running locally").
 services:
   postgres:
     image: postgres:16
